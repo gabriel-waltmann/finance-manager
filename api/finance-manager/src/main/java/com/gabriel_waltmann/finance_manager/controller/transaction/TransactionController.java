@@ -8,7 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,8 +18,10 @@ public class TransactionController {
     private TransactionService service;
 
     @GetMapping
-    ResponseEntity<List<Transaction>> list() {
-        List<Transaction> list = service.list();
+    ResponseEntity<List<Transaction>> list(@RequestParam(required = false) String withDeleted) {
+        boolean withDeletedBool = withDeleted != null && withDeleted.equals("true");
+
+        List<Transaction> list = service.list(withDeletedBool);
 
         return ResponseEntity.ok(list);
     }

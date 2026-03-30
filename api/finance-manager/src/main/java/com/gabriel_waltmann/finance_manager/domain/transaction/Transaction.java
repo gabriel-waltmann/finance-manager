@@ -13,7 +13,6 @@ import java.util.Date;
 import java.util.UUID;
 
 @Entity
-@Table(name = "transactions")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -34,4 +33,7 @@ public class Transaction {
 
     @Column(name = "created_at") @CreationTimestamp
     private Date created_at;
+
+    @Column(name = "deleted_at")
+    private Date deleted_at;
 }
