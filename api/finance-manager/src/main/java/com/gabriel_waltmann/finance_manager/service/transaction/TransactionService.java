@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -29,11 +30,23 @@ public class TransactionService {
     }
 
     public Transaction get(UUID id) {
-        return repository.findById(id).orElse(null);
+        Transaction transaction = repository.findById(id).orElse(null);
+
+        if (transaction == null) {
+            return null;
+        }
+
+        boolean isNotDeleted = transaction.getDeleted_at() == null;
+
+        return isNotDeleted ? transaction : null;
     }
 
     // TODO: Add pagination
-    public List<Transaction> list() {
+    public List<Transaction> list(boolean withDeleted) {
+        if (withDeleted) {
+            return repository.findAllWithDeleted().stream().toList();
+        }
+
         return repository.findAll().stream().toList();
     }
 
@@ -53,7 +66,6 @@ public class TransactionService {
         return transaction;
     }
 
-    // TODO: Add soft delete (deletedAt)
     public void delete(UUID id) {
         Transaction transaction = get(id);
 
@@ -61,6 +73,8 @@ public class TransactionService {
             return;
         }
 
-        repository.deleteById(id);
+        transaction.setDeleted_at(new Date());
+
+        repository.save(transaction);
     }
 }
