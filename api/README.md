@@ -40,10 +40,11 @@
 
 ### Getting Started
 
-Run the development server:
+Run the development server (Arch Linux):
 
 ```bash
-yarn dev
+  sudo pacman -S maven
+  mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Duser.timezone=UTC"
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:8080](http://localhost:8080) with your browser to see the result.
