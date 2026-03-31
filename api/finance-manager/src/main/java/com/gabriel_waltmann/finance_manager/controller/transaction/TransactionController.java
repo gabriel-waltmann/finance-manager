@@ -19,10 +19,15 @@ public class TransactionController {
     private TransactionService service;
 
     @GetMapping
-    ResponseEntity<List<Transaction>> list(@RequestParam(required = false) String withDeleted) {
-        boolean withDeletedBool = withDeleted != null && withDeleted.equals("true");
+    ResponseEntity<List<Transaction>> list(
+            @RequestParam(required = false) String filter,
+            @RequestParam(defaultValue = "10") String limit,
+            @RequestParam(defaultValue = "1") String page
+    ) {
+        int limitInt = Integer.parseInt(limit);
+        int pageInt = Integer.parseInt(page);
 
-        List<Transaction> list = service.list(withDeletedBool);
+        List<Transaction> list = service.list(pageInt, limitInt, filter);
 
         return ResponseEntity.ok(list);
     }
