@@ -1,30 +1,25 @@
 # Finance Manager
 
 ### Functional Requirements
-- [ ] GET /transactions
-  - [ ] Should return a list of Transaction
+- [X] GET /transactions
+  - [X] Should return a list of Transaction
 - [ ] GET /transactions?date=2026-03-27
   - [ ] Should return a list of Transaction by date
-- [ ] POST /transactions
+- [X] POST /transactions
       Params: date, title and amound 
-    - [ ] Should register a Transaction in db and return your id
-- [ ] PUT /transaction/{id}
-  - [ ] Should update a Transaction in db and return ok
-- [ ] DELETE /transaction/{id}
-  - [ ] Should update a Transaction in db as deleted and return ok
-- [ ] POST /transactions/import
-      Params: bankFile
-  - [ ] Should import Transactions from a bank csv file, register in db
-  - [ ] Should register imported Transactions in db
+    - [X] Should register a Transaction in db and return your id
+- [X] PUT /transaction/{id}
+  - [X] Should update a Transaction in db and return ok
+- [X] DELETE /transaction/{id}
+  - [X] Should update a Transaction in db as deleted and return ok
+- [X] POST /transactions/upload
+      Params: file, type and organization
+  - [X] Should import Transactions from a bank csv file
+  - [X] Should register imported Transactions in db
+  - [X] Should not register duplicate Transactions in db
   - [ ] Should process in a queue, without block the request
   - [ ] Should return ok with processing status
-- [ ] POST /transactions/import
-    Params: bankFile
-- [ ] Should import Transactions from a bank csv file, register in db
-- [ ] Should register imported Transactions in db
-- [ ] Should process in a queue, without block the request
-- [ ] Should return ok with processing status
-- [ ] GET /transactions/export?date=2026-03-27
+- [ ] GET /transactions/export?startDate=2026-03-01&endDate=2026-03-31
   - [ ] Should get Transactions from a date range 
   - [ ] Should register the Transactions in a xlsx file
   - [ ] Should process in a queue, without block the request
@@ -36,7 +31,7 @@
 
 ### Nomenclatures
 - Transaction: Pix, Bank Slip, TED, Purchase with Credit Card, etc..
-- Person: A generic definetion to person with name,   
+- Organization: A bank or financial organization
 
 ### Getting Started
 
