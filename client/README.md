@@ -1,7 +1,7 @@
 # Finance Manager
 
 ### Functional Requirements
-- [ ] Should showing up a list of Transaction
+- [X] Should showing up a list of Transaction
 - [ ] Should filter thw list of Transaction by date
 - [ ] Should allow create a Transaction with the follow atributes:
   - Date
