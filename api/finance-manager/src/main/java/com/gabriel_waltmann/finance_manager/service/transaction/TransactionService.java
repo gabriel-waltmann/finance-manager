@@ -1,14 +1,17 @@
 package com.gabriel_waltmann.finance_manager.service.transaction;
 
 import com.gabriel_waltmann.finance_manager.domain.transaction.Transaction;
+import com.gabriel_waltmann.finance_manager.domain.transaction.TransactionListRequest;
 import com.gabriel_waltmann.finance_manager.domain.transaction.TransactionRequest;
 import com.gabriel_waltmann.finance_manager.repository.transaction.TransactionRepository;
 import com.gabriel_waltmann.finance_manager.service.csv.CsvTransactionService;
+import com.gabriel_waltmann.finance_manager.specification.transaction.TransactionSpecification;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,6 +27,9 @@ public class TransactionService {
 
     @Autowired
     private CsvTransactionService csvTransactionService;
+
+    @Autowired
+    private TransactionSpecification transactionSpecification;
 
     private Optional<Transaction> getExists(Date date, String title, BigDecimal amount) {
         return repository.findDuplicatedNotDeleted(date, title, amount);
@@ -57,15 +63,17 @@ public class TransactionService {
         return isNotDeleted ? transaction : null;
     }
 
-    // TODO: Add orderBy
-    public List<Transaction> list(int page, int limit, String filter) {
-        Pageable pageable = PageRequest.of(page, limit);
+    public List<Transaction> list(TransactionListRequest request) {
+        Pageable pageable = PageRequest.of(
+            request.page(),
+            request.limit(),
+            request.orderBy(),
+            "date"
+        );
 
-        boolean withDeletedFilter = filter != null && filter.equals("withDeleted");
+        Specification<Transaction> specification = this.transactionSpecification.list(request);
 
-        Page<Transaction> transactionsPage = withDeletedFilter
-            ? repository.findAllWithDeleted(pageable)
-            : repository.findAll(pageable);
+        Page<Transaction> transactionsPage = repository.findAll(specification, pageable);
 
         return transactionsPage.stream().toList();
     }
