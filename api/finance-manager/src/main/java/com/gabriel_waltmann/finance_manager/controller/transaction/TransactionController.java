@@ -11,7 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.sql.Date;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
 
@@ -32,15 +34,21 @@ public class TransactionController {
     ) {
         boolean withDeletedBool = withDeleted != null && withDeleted.equals("true");
 
-        String startDateStr = startDate == null ? "" : startDate;
-        Date startDateSql = !startDateStr.isEmpty() ? Date.valueOf(startDateStr) : null;
+        DateTimeFormatter parser = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-        String endDateStr = endDate == null ? "" : endDate;
-        Date endDateSql = !endDateStr.isEmpty() ? Date.valueOf(endDateStr) : null;
+        LocalDateTime startDateSql = startDate != null && !startDate.isEmpty()
+            ? LocalDate.parse(startDate, parser).atStartOfDay()
+            : null;
+
+        LocalDateTime endDateSql = endDate != null && !endDate.isEmpty()
+            ? LocalDate.parse(endDate, parser)
+                .atTime(23, 59, 59)
+            : null;
 
         int limitInt = Integer.parseInt(limit);
 
-        int pageInt = Integer.parseInt(page);
+        int pageInt = Integer.parseInt(page); // request page 1 => db page 0
+        int pageSql = pageInt - 1;
 
         Sort.Direction direction = orderBy.equals("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
 
@@ -49,7 +57,7 @@ public class TransactionController {
                 startDateSql,
                 endDateSql,
                 limitInt,
-                pageInt,
+                pageSql,
                 direction
         );
 

@@ -2,12 +2,12 @@ package com.gabriel_waltmann.finance_manager.domain.transaction;
 
 import org.springframework.data.domain.Sort;
 
-import java.sql.Date;
+import java.time.LocalDateTime;
 
 public record TransactionListRequest(
         boolean withDeleted,
-        Date startDate,
-        Date endDate,
+        LocalDateTime startDate,
+        LocalDateTime endDate,
         int limit,
         int page,
         Sort.Direction orderBy
