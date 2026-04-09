@@ -14,7 +14,7 @@ import java.util.Date;
 @NoArgsConstructor
 public class CsvTransaction {
     @CsvBindByName(column = "date")
-    @CsvDate("yyyy-mm-dd")
+    @CsvDate("yyyy-MM-dd")
     private Date date;
 
     @CsvBindByName(column = "title")
