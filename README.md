@@ -6,7 +6,7 @@
 - [ ] GET /transactions?date=2026-03-27
   - [ ] Should return a list of Transaction by date
 - [X] POST /transactions
-      Params: date, title and amound 
+      Params: date, title, amound and status 
     - [X] Should register a Transaction in db and return your id
 - [X] PUT /transaction/{id}
   - [X] Should update a Transaction in db and return ok
@@ -24,14 +24,26 @@
   - [ ] Should register the Transactions in a xlsx file
   - [ ] Should process in a queue, without block the request
   - [ ] Should return ok with processing status
+- [ ] GET /persons
+  - [ ] Should return a list of Person
+- [ ] GET /persons?name=john-doe
+  - [ ] Should return a list of Transaction by date
+- [ ] POST /persons
+  Params: name and phone number
+  - [ ] Should register a Person in db and return your id
+- [ ] PUT /persons/{id}
+  - [ ] Should update a Person in db and return ok
+- [ ] DELETE /persons/{id}
+  - [ ] Should update a Person in db as deleted and return ok
 
-### Non Functional Requirements
+### Non-Functional Requirements
 - [ ] Reliability
 - [ ] Resilient
 
 ### Nomenclatures
 - Transaction: Pix, Bank Slip, TED, Purchase with Credit Card, etc..
 - Organization: A bank or financial organization
+- Person: A person that can be assigned to a transaction
 
 ### Getting Started
 
