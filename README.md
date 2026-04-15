@@ -24,17 +24,17 @@
   - [ ] Should register the Transactions in a xlsx file
   - [ ] Should process in a queue, without block the request
   - [ ] Should return ok with processing status
-- [ ] GET /persons
-  - [ ] Should return a list of Person
+- [X] GET /persons
+  - [X] Should return a list of Person
 - [ ] GET /persons?name=john-doe
-  - [ ] Should return a list of Transaction by date
-- [ ] POST /persons
+    - [ ] Should return a list of Person by name
+- [X] POST /persons
   Params: name and phone number
-  - [ ] Should register a Person in db and return your id
-- [ ] PUT /persons/{id}
-  - [ ] Should update a Person in db and return ok
-- [ ] DELETE /persons/{id}
-  - [ ] Should update a Person in db as deleted and return ok
+  - [X] Should register a Person in db and return your id
+- [X] PUT /persons/{id}
+  - [X] Should update a Person in db and return ok
+- [X] DELETE /persons/{id}
+  - [X] Should update a Person in db as deleted and return ok
 
 ### Non-Functional Requirements
 - [ ] Reliability
