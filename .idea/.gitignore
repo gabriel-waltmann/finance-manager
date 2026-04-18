@@ -5,4 +5,6 @@
 /queries/
 # Datasource local storage ignored files
 /dataSources/
+/dataSources.xml
+/sqldialects.xml
 /dataSources.local.xml

@@ -1,0 +1,1 @@
+ALTER TABLE persons DROP CONSTRAINT IF EXISTS persons_phone_key;
