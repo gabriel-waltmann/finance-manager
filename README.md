@@ -1,22 +1,22 @@
 # Finance Manager
 
 ### Functional Requirements
-- [X] GET /transactions
-  - [X] Should return a list of Transaction
+- [ ] GET /transactions
+  - [ ] Should return a list of Transaction
 - [ ] GET /transactions?date=2026-03-27
   - [ ] Should return a list of Transaction by date
-- [X] POST /transactions
+- [ ] POST /transactions
       Params: date, title, amound and status 
-    - [X] Should register a Transaction in db and return your id
-- [X] PUT /transaction/{id}
-  - [X] Should update a Transaction in db and return ok
-- [X] DELETE /transaction/{id}
-  - [X] Should update a Transaction in db as deleted and return ok
-- [X] POST /transactions/upload
+    - [ ] Should register a Transaction in db and return your id
+- [ ] PUT /transaction/{id}
+  - [ ] Should update a Transaction in db and return ok
+- [ ] DELETE /transaction/{id}
+  - [ ] Should update a Transaction in db as deleted and return ok
+- [ ] POST /transactions/upload
       Params: file, type and organization
-  - [X] Should import Transactions from a bank csv file
-  - [X] Should register imported Transactions in db
-  - [X] Should not register duplicate Transactions in db
+  - [ ] Should import Transactions from a bank csv file
+  - [ ] Should register imported Transactions in db
+  - [ ] Should not register duplicate Transactions in db
   - [ ] Should process in a queue, without block the request
   - [ ] Should return ok with processing status
 - [ ] GET /transactions/export?startDate=2026-03-01&endDate=2026-03-31
@@ -50,8 +50,8 @@
 Run the development server (Arch Linux):
 
 ```bash
-  sudo pacman -S maven
-  mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Duser.timezone=UTC"
+  cd api
+dotnet run --launch-profile https
 ```
 
-Open [http://localhost:8080](http://localhost:8080) with your browser to see the result.
+Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
