@@ -186,6 +186,7 @@ ClientBin/
 *.pfx
 *.publishsettings
 orleans.codegen.cs
+*.http
 
 # RIA/Silverlight projects
 Generated_Code/
@@ -206,7 +207,12 @@ FakesAssemblies/
 # CodeRush personal settings
 .cr/personal
 
-# JetBrains Rider
+# JetBrains
 *.sln.iml
+.idea/*
 
-*.http
+# .env
+.env
+.env.production
+.env.staging
+.env.local
