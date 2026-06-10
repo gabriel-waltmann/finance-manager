@@ -1,21 +1,38 @@
 using api.Models;
 using Microsoft.EntityFrameworkCore;
+using api.Services;
+using api.Exceptions;
+using api.Settings;
+using api.Helpers;
+using api.Mappers;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Database
+var databaseSettingsSection = builder.Configuration.GetSection("Database");
+var databaseSettings = databaseSettingsSection.Get<DatabaseSettings>() ?? throw new NotFoundSettingsDatabase();
+var databaseUrl = BuildDatabaseHelper.Execute(databaseSettings);
+builder.Services.Configure<DatabaseSettings>(databaseSettingsSection);
+builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(databaseUrl));
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Services
+builder.Services.AddScoped<CreateTransactionService>();
+builder.Services.AddScoped<GetTransactionService>();
+builder.Services.AddScoped<ListTransactionService>();
+builder.Services.AddScoped<ListTransactionMapper>();
+builder.Services.AddScoped<UpdateTransactionService>();
+builder.Services.AddScoped<DeleteTransactionService>();
+
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<Context>(opt => opt.UseInMemoryDatabase("Transaction"));
+builder.Services.AddSwaggerGen(o => o.CustomSchemaIds(type => type.ToString()));
+builder.Services.AddControllers();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// Swagger
 if (app.Environment.IsDevelopment())
 {
+    app.UseDeveloperExceptionPage();
     app.UseSwagger();
     app.UseSwaggerUI();
 }

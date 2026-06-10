@@ -1,40 +1,20 @@
 # Finance Manager
 
 ### Functional Requirements
-- [ ] GET /transactions
-  - [ ] Should return a list of Transaction
-- [ ] GET /transactions?date=2026-03-27
-  - [ ] Should return a list of Transaction by date
-- [ ] POST /transactions
-      Params: date, title, amound and status 
-    - [ ] Should register a Transaction in db and return your id
-- [ ] PUT /transaction/{id}
-  - [ ] Should update a Transaction in db and return ok
-- [ ] DELETE /transaction/{id}
-  - [ ] Should update a Transaction in db as deleted and return ok
-- [ ] POST /transactions/upload
-      Params: file, type and organization
-  - [ ] Should import Transactions from a bank csv file
-  - [ ] Should register imported Transactions in db
-  - [ ] Should not register duplicate Transactions in db
-  - [ ] Should process in a queue, without block the request
-  - [ ] Should return ok with processing status
-- [ ] GET /transactions/export?startDate=2026-03-01&endDate=2026-03-31
-  - [ ] Should get Transactions from a date range 
-  - [ ] Should register the Transactions in a xlsx file
-  - [ ] Should process in a queue, without block the request
-  - [ ] Should return ok with processing status
-- [ ] GET /persons
-  - [ ] Should return a list of Person
-- [ ] GET /persons?name=john-doe
-  - [ ] Should return a list of Transaction by date
-- [ ] POST /persons
-  Params: name and phone number
-  - [ ] Should register a Person in db and return your id
-- [ ] PUT /persons/{id}
-  - [ ] Should update a Person in db and return ok
-- [ ] DELETE /persons/{id}
-  - [ ] Should update a Person in db as deleted and return ok
+- [X] GET /transactions should return a list of Transaction
+- [ ] GET /transactions?date=2026-03-27 should return a list of Transaction by date
+- [X] POST /transactions should register a Transaction with date, title and amound  
+- [X] PUT /transaction/{id} should update a Transaction with date, title and amound
+- [X] DELETE /transaction/{id} should mark a Transaction as deleted
+- [X] POST /transactions/upload should create transaction by csv file
+- [ ] POST /transactions/upload should not register duplicate Transactions
+- [ ] POST /transactions/upload should process in a queue, without block the request
+- [ ] GET /transactions/export?startDate=2026-03-01&endDate=2026-03-31 should return Transactions in a xlsx file from a date range 
+- [ ] GET /persons should return a list of Person
+- [ ] GET /persons?name=john-doe should return a list of Transaction by date
+- [ ] POST /persons should register a Person with name and phone number
+- [ ] PUT /persons/{id} should update a Person with name and phone number
+- [ ] DELETE /persons/{id} should mark a Person as deleted
 
 ### Non-Functional Requirements
 - [ ] Reliability

@@ -1,6 +1,7 @@
 services:
   db:
     image: postgres:16
+    container_name: finance-manager-db
     restart: always
     environment:
       POSTGRES_PASSWORD: finance-manager-password-123

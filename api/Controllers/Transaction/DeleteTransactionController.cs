@@ -1,0 +1,38 @@
+using api.Exceptions;
+using api.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace api.Controllers;
+
+[ApiController]
+[Tags("Transaction")]
+[Route("/transaction/{id}")]
+public class DeleteTransactionController(
+    ILogger<DeleteTransactionController> logger,
+    DeleteTransactionService service
+) : ControllerBase
+{
+    private readonly ILogger<DeleteTransactionController> _logger = logger;
+    private readonly DeleteTransactionService _service = service;
+
+    [HttpDelete]
+    public async Task<ActionResult> ExecuteAsync([FromRoute] string id)
+    {
+        try
+        {
+            await _service.ExecuteAsync(Guid.Parse(id));
+            
+            return StatusCode(200);
+        }
+        catch (NotFoundTransactionException)
+        {
+            return StatusCode(200);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[DeleteTransactionController]");
+
+            return StatusCode(500, new { error = "Internal server error"} );
+        }
+    }
+}
