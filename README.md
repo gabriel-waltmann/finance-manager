@@ -1,18 +1,23 @@
 # Finance Manager
 
-### Run the development server (Arch Linux):
+### Run the development server
 ```bash
   cd api
-dotnet run --launch-profile https
+dotnet run 
 ```
 Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
 
 ### Run migrations
 ```bash
+# Install dotnet-ef 
 dotnet tool install --global dotnet-ef
+dotnet tool update --global dotnet-ef
+
+# Apply migrations
 dotnet ef migrations add MigrationName
 dotnet ef database update
 ```
+
 More details: https://medium.com/@adrianbailador/getting-started-with-postgresql-in-net-from-zero-to-production-1df2e489cd43
 
 ### Functional Requirements
