@@ -8,13 +8,16 @@
 ```
 Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
 
-### Run migrations
+### Create and apply migrations
 ```bash
-# Install dotnet-ef 
-
-# Apply migrations
+# Create migration
 dotnet ef migrations add MigrationName
+
+# Apply migrations - development
 dotnet ef database update
+
+# Apply migrations - production 
+dotnet ef migrations script --idempotent -o migrations.sql
 ```
 
 More details: https://medium.com/@adrianbailador/getting-started-with-postgresql-in-net-from-zero-to-production-1df2e489cd43
