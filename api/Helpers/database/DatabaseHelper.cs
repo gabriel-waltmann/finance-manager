@@ -1,10 +1,10 @@
 using api.Settings;
 
-namespace api.Helpers;
+namespace api.Helpers.Database;
 
 public static class BuildDatabaseHelper
 {
-  public static string Execute(DatabaseSettings settings)
+  public static string BuildUrlString(DatabaseSettings settings)
   {
     var host = settings.Host;
     var port = settings.Port;
