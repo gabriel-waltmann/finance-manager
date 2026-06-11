@@ -3,15 +3,17 @@ using Microsoft.EntityFrameworkCore;
 using api.Services;
 using api.Exceptions;
 using api.Settings;
-using api.Helpers;
+using api.Helpers.Database;
+using api.Helpers.File.Csv;
 using api.Mappers;
+using api.Models.Files;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
 var databaseSettingsSection = builder.Configuration.GetSection("Database");
 var databaseSettings = databaseSettingsSection.Get<DatabaseSettings>() ?? throw new NotFoundSettingsDatabase();
-var databaseUrl = BuildDatabaseHelper.Execute(databaseSettings);
+var databaseUrl = BuildDatabaseHelper.BuildUrlString(databaseSettings);
 builder.Services.Configure<DatabaseSettings>(databaseSettingsSection);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(databaseUrl));
 
@@ -42,5 +44,8 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
+
+string filePath = "../examples/Nubank_2026-03-10.csv";
+var items = CsvFileHelper.Read<CreditCardNubankFile>(filePath);
 
 await app.RunAsync();
