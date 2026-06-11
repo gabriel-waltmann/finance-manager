@@ -1,5 +1,20 @@
 # Finance Manager
 
+### Run the development server (Arch Linux):
+```bash
+  cd api
+dotnet run --launch-profile https
+```
+Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
+
+### Run migrations
+```bash
+dotnet tool install --global dotnet-ef
+dotnet ef migrations add MigrationName
+dotnet ef database update
+```
+More details: https://medium.com/@adrianbailador/getting-started-with-postgresql-in-net-from-zero-to-production-1df2e489cd43
+
 ### Functional Requirements
 - [X] GET /transactions should return a list of Transaction
 - [ ] GET /transactions?date=2026-03-27 should return a list of Transaction by date
@@ -24,14 +39,3 @@
 - Transaction: Pix, Bank Slip, TED, Purchase with Credit Card, etc..
 - Organization: A bank or financial organization
 - Person: A person that can be assigned to a transaction
-
-### Getting Started
-
-Run the development server (Arch Linux):
-
-```bash
-  cd api
-dotnet run --launch-profile https
-```
-
-Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
