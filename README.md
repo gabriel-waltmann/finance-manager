@@ -2,16 +2,15 @@
 
 ### Run the development server
 ```bash
+  docker compose up -d
   cd api
-dotnet run 
+  dotnet run 
 ```
 Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
 
 ### Run migrations
 ```bash
 # Install dotnet-ef 
-dotnet tool install --global dotnet-ef
-dotnet tool update --global dotnet-ef
 
 # Apply migrations
 dotnet ef migrations add MigrationName
