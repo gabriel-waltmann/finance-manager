@@ -1,26 +1,13 @@
 # Finance Manager
 
 ### Run the development server
+Define yours secrets. See [define-secrets.md](./docs/secrets/define-secrets.md)
 ```bash
   docker compose up -d
   cd api
   dotnet run 
 ```
 Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
-
-### Create and apply migrations
-```bash
-# Create migration
-dotnet ef migrations add MigrationName
-
-# Apply migrations - development
-dotnet ef database update
-
-# Apply migrations - production 
-dotnet ef migrations script --idempotent -o migrations.sql
-```
-
-More details: https://medium.com/@adrianbailador/getting-started-with-postgresql-in-net-from-zero-to-production-1df2e489cd43
 
 ### Functional Requirements
 - [X] GET /transactions should return a list of Transaction
