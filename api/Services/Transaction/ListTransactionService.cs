@@ -8,10 +8,10 @@ public class ListTransactionService(DatabaseContext context)
 {
   private readonly DatabaseContext _context = context; 
 
-  public async Task<List<TransactionModel>> ExecuteAsync()
+  public async Task<List<TransactionModel>> ExecuteAsync(bool withDeleted)
   {
     return await _context.Transactions
-      .Where(transaction => transaction.Deleted_at == null)
+      .Where(transaction => withDeleted || transaction.Deleted_at == null)
       .ToListAsync();
   }
 }

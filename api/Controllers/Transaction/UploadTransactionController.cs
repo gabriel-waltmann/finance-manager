@@ -22,18 +22,17 @@ public class UploadTransactionController(
     private readonly ListTransactionService _listService = listService;
     private readonly CreateTransactionService _createService = createService;
 
-    private static TransactionModel Exists(List<TransactionModel> transactions, CreateTransactionRequest request)
+    private static bool Exists(
+        List<TransactionModel> transactions, 
+        CreateTransactionRequest request
+    )
     {
-        foreach (var transaction in transactions)
-        {
-            var someTitle = request.Title == transaction.Title;
-            var someDate = request.Date == transaction.Date;
-            var someAmont = request.Amount == transaction.Amount;
-
-            return someTitle && someDate && someAmont ? transaction : null;
-        }
-
-        return null;
+        return transactions.Exists(transaction => 
+            request.Title == transaction.Title &&
+            request.Date == transaction.Date &&
+            request.Amount == transaction.Amount && 
+            transaction.Deleted_at == null
+        );
     }
     
     [HttpPost]
@@ -41,7 +40,7 @@ public class UploadTransactionController(
     {
         try
         {
-            var transactions = await _listService.ExecuteAsync();
+            var transactions = await _listService.ExecuteAsync(true);
 
             var fileItems = CsvFileHelper.Convert<CreditCardNubankFile>(request.File);
 
@@ -51,9 +50,7 @@ public class UploadTransactionController(
 
                 if (createRequest == null) continue;
 
-                var exist = Exists(transactions, createRequest);
-
-                if (exist == null) continue;
+                if (Exists(transactions, createRequest)) continue;
 
                 await _createService.ExecuteAsync(createRequest);
             }

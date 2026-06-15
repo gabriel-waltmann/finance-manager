@@ -14,6 +14,7 @@ var databaseSettings = databaseSettingsSection.Get<DatabaseSettings>() ?? throw 
 var databaseUrl = BuildDatabaseHelper.BuildUrlString(databaseSettings);
 builder.Services.Configure<DatabaseSettings>(databaseSettingsSection);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(databaseUrl));
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Services
 builder.Services.AddScoped<CreateTransactionService>();
@@ -21,6 +22,7 @@ builder.Services.AddScoped<GetTransactionService>();
 builder.Services.AddScoped<ListTransactionService>();
 builder.Services.AddScoped<ListTransactionMapper>();
 builder.Services.AddScoped<UpdateTransactionService>();
+builder.Services.AddScoped<DeleteTransactionService>();
 builder.Services.AddScoped<UploadTransactionMapper>();
 
 builder.Services.AddEndpointsApiExplorer();
