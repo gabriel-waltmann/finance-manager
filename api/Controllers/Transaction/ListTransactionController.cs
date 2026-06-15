@@ -19,11 +19,13 @@ public class ListTransactionController(
     private readonly ListTransactionMapper _mapper = mapper;
 
     [HttpGet]
-    public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync()
+    public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync(
+        [FromQuery] string withDeleted
+    )
     {
         try
         {
-            var transactions = await _service.ExecuteAsync();
+            var transactions = await _service.ExecuteAsync(withDeleted == "true");
 
             var response = _mapper.MapResponse(transactions);
             
