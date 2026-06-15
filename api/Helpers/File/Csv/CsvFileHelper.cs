@@ -5,11 +5,11 @@ namespace api.Helpers.File.Csv;
 
 public static class CsvFileHelper
 {
-  public static List<ModelFile> Read<ModelFile>(string filePath)
+  public static List<ModelFile> Convert<ModelFile>(IFormFile file)
   {
     try
     {
-      using var reader = new StreamReader(filePath);
+      using var reader = new StreamReader(file.OpenReadStream());
       using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
       
       var records = csv.GetRecords<ModelFile>();
