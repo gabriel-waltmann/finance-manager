@@ -1,13 +1,12 @@
-using System.Globalization;
 using api.Helpers.File.Csv;
-using api.Mappers;
-using api.Models;
+using api.Mappers.Transaction;
 using api.Models.Files;
-using api.Requests;
-using api.Services;
+using api.Models.Transaction;
+using api.Requests.Transaction;
+using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api.Controllers;
+namespace api.Controllers.Transaction;
 
 [ApiController]
 [Tags("Transaction")]
@@ -23,7 +22,7 @@ public class UploadTransactionController(
     private readonly ListTransactionService _listService = listService;
     private readonly CreateTransactionService _createService = createService;
 
-    private static Transaction Exists(List<Transaction> transactions, CreateTransactionRequest request)
+    private static TransactionModel Exists(List<TransactionModel> transactions, CreateTransactionRequest request)
     {
         foreach (var transaction in transactions)
         {

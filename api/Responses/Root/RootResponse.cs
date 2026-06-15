@@ -1,4 +1,4 @@
-namespace api.Responses;
+namespace api.Responses.Root;
 
 public class RootResponse
 {

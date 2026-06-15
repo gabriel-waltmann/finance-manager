@@ -1,10 +1,9 @@
-using System.Transactions;
-using api.Requests;
-using api.Mappers;
-using api.Services;
+using api.Mappers.Transaction;
+using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
+using api.Models.Transaction;
 
-namespace api.Controllers;
+namespace api.Controllers.Transaction;
 
 [ApiController]
 [Tags("Transaction")]
@@ -20,7 +19,7 @@ public class ListTransactionController(
     private readonly ListTransactionMapper _mapper = mapper;
 
     [HttpGet]
-    public async Task<ActionResult<List<Transaction>>> ExecuteAsync()
+    public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync()
     {
         try
         {

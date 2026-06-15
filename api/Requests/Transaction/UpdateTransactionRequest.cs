@@ -1,4 +1,4 @@
-namespace api.Requests;
+namespace api.Requests.Transaction;
 
 public class UpdateTransactionRequest
 {

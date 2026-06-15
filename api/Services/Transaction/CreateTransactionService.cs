@@ -1,17 +1,18 @@
-using api.Requests;
-using api.Models;
+using api.Requests.Transaction;
+using api.Models.Transaction;
+using api.Models.Database;
 
-namespace api.Services;
+namespace api.Services.Transaction;
 
 public class CreateTransactionService(DatabaseContext context)
 {
   private readonly DatabaseContext _context = context; 
 
-  private static Transaction Map(CreateTransactionRequest dto)
+  private static TransactionModel Map(CreateTransactionRequest dto)
   {
     var id = Guid.NewGuid();
 
-    return new Transaction
+    return new TransactionModel
     {
       Id = id,
       Title = dto.Title,
@@ -21,7 +22,7 @@ public class CreateTransactionService(DatabaseContext context)
     };
   }
 
-  public async Task<Transaction> ExecuteAsync(CreateTransactionRequest dto) {
+  public async Task<TransactionModel> ExecuteAsync(CreateTransactionRequest dto) {
     var transaction = Map(dto);
 
     _context.Transactions.Add(transaction);

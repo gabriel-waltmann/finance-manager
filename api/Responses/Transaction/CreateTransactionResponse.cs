@@ -1,6 +1,5 @@
-using api.Models;
 
-namespace api.Responses;
+namespace api.Responses.Transaction;
 
 public class CreateTransactionResponse
 {

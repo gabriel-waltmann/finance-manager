@@ -1,8 +1,9 @@
-using api.Models;
 
-namespace api.Responses;
+using api.Models.Transaction;
+
+namespace api.Responses.Transaction;
 
 public class GetTransactionResponse
 {
-  public required Transaction Transaction { get; set; }
+  public required TransactionModel Transaction { get; set; }
 }

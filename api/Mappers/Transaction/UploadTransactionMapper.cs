@@ -1,8 +1,8 @@
 using System.Globalization;
 using api.Models.Files;
-using api.Requests;
+using api.Requests.Transaction;
 
-namespace api.Mappers;
+namespace api.Mappers.Transaction;
 
 public class UploadTransactionMapper
 {

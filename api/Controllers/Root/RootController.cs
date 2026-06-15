@@ -1,4 +1,4 @@
-using api.Responses;
+using api.Responses.Root;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers.Root;
