@@ -1,8 +1,8 @@
 using api.Exceptions;
-using api.Services;
+using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api.Controllers;
+namespace api.Controllers.Transaction;
 
 [ApiController]
 [Tags("Transaction")]

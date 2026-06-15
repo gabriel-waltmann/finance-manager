@@ -1,11 +1,12 @@
+using api.Models.Transaction;
 using Microsoft.EntityFrameworkCore;
 
-namespace api.Models;
+namespace api.Models.Database;
 
 public class DatabaseContext : DbContext
 {
   public DatabaseContext(DbContextOptions<DatabaseContext> options)
     : base(options) { }
 
-  public DbSet<Transaction> Transactions { get; set; } = null!;
+  public DbSet<TransactionModel> Transactions { get; set; } = null!;
 }

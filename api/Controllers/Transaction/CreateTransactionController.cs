@@ -1,9 +1,9 @@
-using api.Requests;
-using api.Responses;
-using api.Services;
+using api.Requests.Transaction;
+using api.Responses.Transaction;
+using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api.Controllers;
+namespace api.Controllers.Transaction;
 
 [ApiController]
 [Tags("Transaction")]

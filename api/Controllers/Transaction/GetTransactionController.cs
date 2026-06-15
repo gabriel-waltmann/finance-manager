@@ -1,9 +1,9 @@
-using System.Transactions;
 using api.Exceptions;
-using api.Services;
+using api.Models.Transaction;
+using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 
-namespace api.Controllers;
+namespace api.Controllers.Transaction;
 
 [ApiController]
 [Tags("Transaction")]
@@ -17,7 +17,7 @@ public class GetTransactionController(
     private readonly GetTransactionService _service = service;
 
     [HttpGet]
-    public async Task<ActionResult<Transaction>> ExecuteAsync([FromRoute] string id)
+    public async Task<ActionResult<TransactionModel>> ExecuteAsync([FromRoute] string id)
     {
         try
         {

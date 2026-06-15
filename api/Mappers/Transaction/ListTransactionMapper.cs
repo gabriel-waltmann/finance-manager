@@ -1,11 +1,11 @@
-using api.Models;
-using api.Responses;
+using api.Models.Transaction;
+using api.Responses.Transaction;
 
-namespace api.Mappers;
+namespace api.Mappers.Transaction;
 
 public class ListTransactionMapper
 {
-  public ListTransactionResponse MapResponse(List<Transaction> transactions)
+  public ListTransactionResponse MapResponse(List<TransactionModel> transactions)
   {
     return new ListTransactionResponse
     {

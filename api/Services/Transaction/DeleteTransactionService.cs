@@ -1,7 +1,7 @@
 using api.Exceptions;
-using api.Models;
+using api.Models.Database;
 
-namespace api.Services;
+namespace api.Services.Transaction;
 
 public class DeleteTransactionService(DatabaseContext context)
 {

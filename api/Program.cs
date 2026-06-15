@@ -1,16 +1,16 @@
-using api.Models;
 using Microsoft.EntityFrameworkCore;
-using api.Services;
-using api.Exceptions;
+using api.Services.Transaction;
 using api.Settings;
 using api.Helpers.Database;
-using api.Mappers;
+using api.Mappers.Transaction;
+using api.Exceptions.Database;
+using api.Models.Database;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Database
 var databaseSettingsSection = builder.Configuration.GetSection("Database");
-var databaseSettings = databaseSettingsSection.Get<DatabaseSettings>() ?? throw new NotFoundSettingsDatabase();
+var databaseSettings = databaseSettingsSection.Get<DatabaseSettings>() ?? throw new NotFoundSettingsDatabaseException();
 var databaseUrl = BuildDatabaseHelper.BuildUrlString(databaseSettings);
 builder.Services.Configure<DatabaseSettings>(databaseSettingsSection);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(databaseUrl));

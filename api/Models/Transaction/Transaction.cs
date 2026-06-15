@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace api.Models;
+namespace api.Models.Transaction;
 
 [Table("transactions")]
-public class Transaction
+public class TransactionModel
 {
   [Column("id")]
   public required Guid Id { get; set; }
