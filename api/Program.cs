@@ -4,9 +4,7 @@ using api.Services;
 using api.Exceptions;
 using api.Settings;
 using api.Helpers.Database;
-using api.Helpers.File.Csv;
 using api.Mappers;
-using api.Models.Files;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +21,7 @@ builder.Services.AddScoped<GetTransactionService>();
 builder.Services.AddScoped<ListTransactionService>();
 builder.Services.AddScoped<ListTransactionMapper>();
 builder.Services.AddScoped<UpdateTransactionService>();
-builder.Services.AddScoped<UploadTransactionService>();
+builder.Services.AddScoped<UploadTransactionMapper>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.CustomSchemaIds(type => type.ToString()));
@@ -44,8 +42,5 @@ app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
-
-string filePath = "../examples/Nubank_2026-03-10.csv";
-var items = CsvFileHelper.Read<CreditCardNubankFile>(filePath);
 
 await app.RunAsync();

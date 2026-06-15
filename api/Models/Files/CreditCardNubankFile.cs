@@ -11,6 +11,6 @@ public class CreditCardNubankFile
     public required string Title { get; set; }
     
     [Name("amount")]
-    public decimal Amount { get; set; }
+    public required string Amount { get; set; }
 
 }
