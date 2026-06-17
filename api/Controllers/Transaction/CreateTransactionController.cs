@@ -10,18 +10,18 @@ namespace api.Controllers.Transaction;
 [Route("/transaction")]
 public class CreateTransactionController(
     ILogger<CreateTransactionController> logger,
-    CreateTransactionService service
+    TransactionService service
 ) : ControllerBase
 {
     private readonly ILogger<CreateTransactionController> _logger = logger;
-    private readonly CreateTransactionService _service = service;
+    private readonly TransactionService _service = service;
     
     [HttpPost]
     public async Task<ActionResult<ListTransactionResponse>> ExecuteAsync([FromBody] CreateTransactionRequest request)
     {
         try
         {
-            var transaction = await _service.ExecuteAsync(request);
+            var transaction = await _service.Create(request);
 
             return StatusCode(201, transaction);
         } catch (Exception ex)

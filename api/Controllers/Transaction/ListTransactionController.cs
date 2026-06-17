@@ -1,7 +1,7 @@
-using api.Mappers.Transaction;
 using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 using api.Models.Transaction;
+using api.Responses.Transaction;
 
 namespace api.Controllers.Transaction;
 
@@ -10,14 +10,20 @@ namespace api.Controllers.Transaction;
 [Route("/transactions")]
 public class ListTransactionController(
     ILogger<ListTransactionController> logger,
-    ListTransactionMapper mapper,
-    ListTransactionService service
+    TransactionService service
 ) : ControllerBase
 {
     private readonly ILogger<ListTransactionController> _logger = logger;
-    private readonly ListTransactionService _service = service;
-    private readonly ListTransactionMapper _mapper = mapper;
+    private readonly TransactionService _service = service;
 
+    public static ListTransactionResponse MapResponse(List<TransactionModel> transactions)
+    {
+        return new ListTransactionResponse
+        {
+        Transactions = transactions
+        };
+    }
+  
     [HttpGet]
     public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync(
         [FromQuery] string withDeleted
@@ -25,9 +31,9 @@ public class ListTransactionController(
     {
         try
         {
-            var transactions = await _service.ExecuteAsync(withDeleted == "true");
+            var transactions = await _service.List(withDeleted == "true");
 
-            var response = _mapper.MapResponse(transactions);
+            var response = MapResponse(transactions);
             
             return StatusCode(200, response);
         }

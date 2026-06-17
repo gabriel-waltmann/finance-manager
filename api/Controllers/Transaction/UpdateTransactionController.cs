@@ -9,18 +9,18 @@ namespace api.Controllers.Transaction;
 [Route("/transaction/{id}")]
 public class UpdateTransactionController(
     ILogger<UpdateTransactionController> logger,
-    UpdateTransactionService service
+    TransactionService service
 ) : ControllerBase
 {
     private readonly ILogger<UpdateTransactionController> _logger = logger;
-    private readonly UpdateTransactionService _service = service;
+    private readonly TransactionService _service = service;
 
     [HttpPut]
     public async Task<ActionResult> ExecuteAsync([FromRoute] string id, [FromBody] UpdateTransactionRequest dto)
     {
         try
         {
-            await _service.ExecuteAsync(Guid.Parse(id), dto);
+            await _service.Update(Guid.Parse(id), dto);
             
             return StatusCode(200);
         }

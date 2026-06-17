@@ -10,18 +10,18 @@ namespace api.Controllers.Transaction;
 [Route("/transaction/{id}")]
 public class GetTransactionController(
     ILogger<GetTransactionController> logger,
-    GetTransactionService service
+    TransactionService service
 ) : ControllerBase
 {
     private readonly ILogger<GetTransactionController> _logger = logger;
-    private readonly GetTransactionService _service = service;
+    private readonly TransactionService _service = service;
 
     [HttpGet]
     public async Task<ActionResult<TransactionModel>> ExecuteAsync([FromRoute] string id)
     {
         try
         {
-            var transaction = await _service.ExecuteAsync(Guid.Parse(id));
+            var transaction = await _service.Get(Guid.Parse(id));
             
             return StatusCode(200, transaction);
         }
