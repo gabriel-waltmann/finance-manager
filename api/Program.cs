@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using api.Services.Transaction;
 using api.Settings;
 using api.Helpers.Database;
-using api.Mappers.Transaction;
 using api.Exceptions.Database;
 using api.Models.Database;
 
@@ -17,13 +16,7 @@ builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(data
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Services
-builder.Services.AddScoped<CreateTransactionService>();
-builder.Services.AddScoped<GetTransactionService>();
-builder.Services.AddScoped<ListTransactionService>();
-builder.Services.AddScoped<ListTransactionMapper>();
-builder.Services.AddScoped<UpdateTransactionService>();
-builder.Services.AddScoped<DeleteTransactionService>();
-builder.Services.AddScoped<UploadTransactionMapper>();
+builder.Services.AddScoped<TransactionService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.CustomSchemaIds(type => type.ToString()));

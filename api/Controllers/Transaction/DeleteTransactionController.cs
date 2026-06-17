@@ -9,18 +9,18 @@ namespace api.Controllers.Transaction;
 [Route("/transaction/{id}")]
 public class DeleteTransactionController(
     ILogger<DeleteTransactionController> logger,
-    DeleteTransactionService service
+    TransactionService service
 ) : ControllerBase
 {
     private readonly ILogger<DeleteTransactionController> _logger = logger;
-    private readonly DeleteTransactionService _service = service;
+    private readonly TransactionService _service = service;
 
     [HttpDelete]
     public async Task<ActionResult> ExecuteAsync([FromRoute] string id)
     {
         try
         {
-            await _service.ExecuteAsync(Guid.Parse(id));
+            await _service.Delete(Guid.Parse(id));
             
             return StatusCode(200);
         }
