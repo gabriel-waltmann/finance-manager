@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using api.Models.Database;
@@ -11,9 +12,11 @@ using api.Models.Database;
 namespace api.Migrations
 {
     [DbContext(typeof(DatabaseContext))]
-    partial class DatabaseContextModelSnapshot : ModelSnapshot
+    [Migration("20260617110951_CreateFileTable")]
+    partial class CreateFileTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -56,42 +59,6 @@ namespace api.Migrations
                     b.ToTable("files");
                 });
 
-            modelBuilder.Entity("api.Models.FileProcessing.FileProcessingModel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("Created_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("Deleted_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid>("FileId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("file_id");
-
-                    b.Property<Guid>("JobId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("job_id");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer")
-                        .HasColumnName("status");
-
-                    b.Property<DateTime?>("Updated_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("files_processing");
-                });
-
             modelBuilder.Entity("api.Models.Transaction.TransactionModel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -127,38 +94,6 @@ namespace api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("transactions");
-                });
-
-            modelBuilder.Entity("api.Models.TransactionImport.TransactionImportModel", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTime>("Created_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTime?>("Deleted_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("deleted_at");
-
-                    b.Property<Guid>("FileProcessingId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("file_processing_id");
-
-                    b.Property<Guid>("TransactionId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("transaction_id");
-
-                    b.Property<DateTime?>("Updated_at")
-                        .HasColumnType("timestamp without time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("transactions_import");
                 });
 #pragma warning restore 612, 618
         }
