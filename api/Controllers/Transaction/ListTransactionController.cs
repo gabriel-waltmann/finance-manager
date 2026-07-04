@@ -26,7 +26,7 @@ public class ListTransactionController(
   
     [HttpGet]
     public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync(
-        [FromQuery] string withDeleted
+        [FromQuery] string? withDeleted
     )
     {
         try
