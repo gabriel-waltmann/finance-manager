@@ -1,6 +1,7 @@
 using api.Requests.Transaction;
 using api.Responses.Transaction;
 using api.Services.Transaction;
+using api.Exceptions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace api.Controllers.Transaction;
@@ -24,7 +25,12 @@ public class CreateTransactionController(
             var transaction = await _service.Create(request);
 
             return StatusCode(201, transaction);
-        } catch (Exception ex)
+        }
+        catch (ExistsTransactionException ex)
+        {
+            return StatusCode(409, new { Error = ex.Message });
+        }
+        catch (Exception ex)
         {
             _logger.LogError(ex, "[CreateTransactionController]");
 

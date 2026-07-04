@@ -11,8 +11,8 @@ public class FileModel
   [Column("name")]
   public required string Name { get; set; }
 
-  [Column("container")]
-  public required string Container { get; set; }
+  [Column("data")]
+  public required byte[] Data { get; set; }
 
   [Column("created_at")]
   public required DateTime Created_at { get; set; }

@@ -1,9 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using api.Services.Transaction;
+using api.Services.File;
+using api.Services.FileProcessing;
+using api.Services.Job;
+using api.Services.TransactionImport;
 using api.Settings;
 using api.Helpers.Database;
 using api.Exceptions.Database;
 using api.Models.Database;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,8 +20,23 @@ builder.Services.Configure<DatabaseSettings>(databaseSettingsSection);
 builder.Services.AddDbContext<DatabaseContext>(options => options.UseNpgsql(databaseUrl));
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
+// Redis
+var redisSettingsSection = builder.Configuration.GetSection("Redis");
+var redisSettings = redisSettingsSection.Get<RedisSettings>()
+  ?? throw new InvalidOperationException("Redis settings not found.");
+
+builder.Services.Configure<RedisSettings>(redisSettingsSection);
+builder.Services.AddSingleton<IConnectionMultiplexer>(
+  ConnectionMultiplexer.Connect($"{redisSettings.Host}:{redisSettings.Port}")
+);
+
 // Services
 builder.Services.AddScoped<TransactionService>();
+builder.Services.AddScoped<FileService>();
+builder.Services.AddScoped<FileProcessingService>();
+builder.Services.AddScoped<TransactionImportService>();
+builder.Services.AddScoped<JobService>();
+builder.Services.AddHostedService<TransactionImportJob>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.CustomSchemaIds(type => type.ToString()));

@@ -37,6 +37,18 @@ public class TransactionService(DatabaseContext context)
   }
 
   public async Task<TransactionModel> Create(CreateTransactionRequest dto) {
+    var exists = await _context.Transactions.AnyAsync(transaction =>
+      transaction.Deleted_at == null &&
+      transaction.Date == dto.Date &&
+      transaction.Title == dto.Title &&
+      transaction.Amount == dto.Amount
+    );
+
+    if (exists)
+    {
+      throw new ExistsTransactionException();
+    }
+
     var transaction = MapCreate(dto);
 
     _context.Transactions.Add(transaction);
