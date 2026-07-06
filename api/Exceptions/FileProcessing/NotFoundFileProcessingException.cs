@@ -4,7 +4,8 @@ public class NotFoundFileProcessingException : Exception
 {
   private const string message = "File processing not found.";
 
-  public NotFoundFileProcessingException() { }
+  public NotFoundFileProcessingException()
+      : base(message) { }
 
   public NotFoundFileProcessingException(string m)
     : base(message) { }

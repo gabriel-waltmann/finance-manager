@@ -26,7 +26,10 @@ public class TransactionService(DatabaseContext context)
 
   public async Task<TransactionModel> Get(Guid id)
   {
-    return await _context.Transactions.FindAsync(id) ?? throw new NotFoundTransactionException();
+    return await _context.Transactions.FirstOrDefaultAsync(transaction =>
+      transaction.Id == id &&
+      transaction.Deleted_at == null
+    ) ?? throw new NotFoundTransactionException();
   }
 
   public async Task<List<TransactionModel>> List(bool withDeleted)

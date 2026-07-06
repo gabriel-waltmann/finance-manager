@@ -4,7 +4,8 @@ public class NotFoundTransactionException : Exception
 {
   private const string message = "Transaction not found.";
 
-  public NotFoundTransactionException() { }
+  public NotFoundTransactionException()
+    : base(message) { }
 
   public NotFoundTransactionException(string m)
     : base(message) { }

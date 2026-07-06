@@ -3,7 +3,9 @@ using api.Services.Transaction;
 using api.Services.File;
 using api.Services.FileProcessing;
 using api.Services.Job;
+using api.Services.Person;
 using api.Services.TransactionImport;
+using api.Services.TransactionPerson;
 using api.Settings;
 using api.Helpers.Database;
 using api.Exceptions.Database;
@@ -32,6 +34,8 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
 
 // Services
 builder.Services.AddScoped<TransactionService>();
+builder.Services.AddScoped<PersonService>();
+builder.Services.AddScoped<TransactionPersonService>();
 builder.Services.AddScoped<FileService>();
 builder.Services.AddScoped<FileProcessingService>();
 builder.Services.AddScoped<TransactionImportService>();

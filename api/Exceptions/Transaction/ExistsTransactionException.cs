@@ -4,7 +4,8 @@ public class ExistsTransactionException : Exception
 {
   private const string message = "Transaction already exists.";
 
-  public ExistsTransactionException() { }
+  public ExistsTransactionException()
+    : base(message) { }
 
   public ExistsTransactionException(string m)
     : base(message) { }
