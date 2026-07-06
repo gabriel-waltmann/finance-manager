@@ -1,8 +1,6 @@
-using api.Models.Transaction;
-
 namespace api.Responses.Transaction;
 
 public class ListTransactionResponse
 {
-  public required List<TransactionModel> Transactions { get; set; }
+  public required List<GetTransactionResponse> Transactions { get; set; }
 }

@@ -1,6 +1,5 @@
 using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
-using api.Models.Transaction;
 using api.Responses.Transaction;
 
 namespace api.Controllers.Transaction;
@@ -16,22 +15,22 @@ public class ListTransactionController(
     private readonly ILogger<ListTransactionController> _logger = logger;
     private readonly TransactionService _service = service;
 
-    public static ListTransactionResponse MapResponse(List<TransactionModel> transactions)
+    public static ListTransactionResponse MapResponse(List<GetTransactionResponse> transactions)
     {
         return new ListTransactionResponse
         {
-        Transactions = transactions
+            Transactions = transactions
         };
     }
   
     [HttpGet]
-    public async Task<ActionResult<List<TransactionModel>>> ExecuteAsync(
+    public async Task<ActionResult<ListTransactionResponse>> ExecuteAsync(
         [FromQuery] string? withDeleted
     )
     {
         try
         {
-            var transactions = await _service.List(withDeleted == "true");
+            var transactions = await _service.ListWithTransactionPerson(withDeleted == "true");
 
             var response = MapResponse(transactions);
             

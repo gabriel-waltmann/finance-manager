@@ -1,6 +1,9 @@
 using api.Requests.Transaction;
 using api.Models.Transaction;
 using api.Models.Database;
+using api.Models.Person;
+using api.Models.TransactionPerson;
+using api.Responses.Transaction;
 using api.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,11 +35,68 @@ public class TransactionService(DatabaseContext context)
     ) ?? throw new NotFoundTransactionException();
   }
 
+  public async Task<GetTransactionResponse> GetWithTransactionPerson(Guid id)
+  {
+    var transaction = await Get(id);
+    var transactionPerson = await GetTransactionPerson(transaction.Id, false);
+    var person = transactionPerson == null
+      ? null
+      : await GetPerson(transactionPerson.PersonId, false);
+
+    return new GetTransactionResponse
+    {
+      Transaction = transaction,
+      TransactionPerson = transactionPerson,
+      Person = person
+    };
+  }
+
   public async Task<List<TransactionModel>> List(bool withDeleted)
   {
     return await _context.Transactions
       .Where(transaction => withDeleted || transaction.Deleted_at == null)
       .ToListAsync();
+  }
+
+  // TODO: refactor to use one sql query 
+  public async Task<List<GetTransactionResponse>> ListWithTransactionPerson(bool withDeleted)
+  {
+    var transactions = await List(withDeleted);
+    var transactionIds = transactions.Select(transaction => transaction.Id).ToList();
+
+    var transactionPersons = await _context.TransactionsPerson
+      .Where(transactionPerson =>
+        transactionIds.Contains(transactionPerson.TransactionId) &&
+        (withDeleted || transactionPerson.Deleted_at == null)
+      )
+      .OrderBy(transactionPerson => transactionPerson.Deleted_at == null ? 0 : 1)
+      .ThenByDescending(transactionPerson => transactionPerson.Created_at)
+      .ToListAsync();
+
+    var transactionPersonByTransactionId = transactionPersons
+      .GroupBy(transactionPerson => transactionPerson.TransactionId)
+      .ToDictionary(group => group.Key, group => group.First());
+
+    var personIds = transactionPersons.Select(transactionPerson => transactionPerson.PersonId).ToList();
+
+    var persons = await _context.Persons
+      .Where(person =>
+        personIds.Contains(person.Id) &&
+        (withDeleted || person.Deleted_at == null)
+      )
+      .ToListAsync();
+
+    var personById = persons.ToDictionary(person => person.Id);
+
+    return transactions.Select(transaction => new GetTransactionResponse
+    {
+      Transaction = transaction,
+      TransactionPerson = transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
+      Person = GetPersonFromTransactionPerson(
+        transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
+        personById
+      )
+    }).ToList();
   }
 
   public async Task<TransactionModel> Create(CreateTransactionRequest dto) {
@@ -80,5 +140,35 @@ public class TransactionService(DatabaseContext context)
     transaction.Deleted_at = DateTime.UtcNow;
 
     await _context.SaveChangesAsync();
+  }
+
+  private async Task<TransactionPersonModel?> GetTransactionPerson(Guid transactionId, bool withDeleted)
+  {
+    return await _context.TransactionsPerson
+      .Where(transactionPerson =>
+        transactionPerson.TransactionId == transactionId &&
+        (withDeleted || transactionPerson.Deleted_at == null)
+      )
+      .OrderBy(transactionPerson => transactionPerson.Deleted_at == null ? 0 : 1)
+      .ThenByDescending(transactionPerson => transactionPerson.Created_at)
+      .FirstOrDefaultAsync();
+  }
+
+  private async Task<PersonModel?> GetPerson(Guid personId, bool withDeleted)
+  {
+    return await _context.Persons.FirstOrDefaultAsync(person =>
+      person.Id == personId &&
+      (withDeleted || person.Deleted_at == null)
+    );
+  }
+
+  private static PersonModel? GetPersonFromTransactionPerson(
+    TransactionPersonModel? transactionPerson,
+    Dictionary<Guid, PersonModel> personById
+  )
+  {
+    return transactionPerson == null
+      ? null
+      : personById.GetValueOrDefault(transactionPerson.PersonId);
   }
 }
