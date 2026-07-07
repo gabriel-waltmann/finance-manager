@@ -17,7 +17,7 @@ export function displayDate(value: string): string {
     return value
   }
 
-  return `${month}/${day}/${year}`
+  return `${day}/${month}/${year}`
 }
 
 export function displayAmount(value: number): string {

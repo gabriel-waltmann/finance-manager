@@ -43,6 +43,7 @@ const assignmentSaving = ref<Record<string, boolean>>({})
 const filters = reactive({
   startDate: '',
   endDate: '',
+  order: 'desc' as 'asc' | 'desc',
 })
 
 const pagination = reactive({
@@ -97,6 +98,7 @@ async function loadData() {
         endDate: filters.endDate || undefined,
         page: pagination.page,
         limit: pagination.limit,
+        order: filters.order,
       }),
       listPeople(),
     ])
@@ -115,6 +117,7 @@ async function loadData() {
         endDate: filters.endDate || undefined,
         page: pagination.page,
         limit: pagination.limit,
+        order: filters.order,
       })
 
       applyTransactionResponse(adjustedResponse)
@@ -143,6 +146,13 @@ function applyDateFilter() {
 function changeLimit(event: Event) {
   const select = event.target as HTMLSelectElement
   pagination.limit = Number(select.value)
+  pagination.page = 1
+  void loadData()
+}
+
+function changeOrder(event: Event) {
+  const select = event.target as HTMLSelectElement
+  filters.order = select.value === 'asc' ? 'asc' : 'desc'
   pagination.page = 1
   void loadData()
 }
@@ -433,7 +443,7 @@ function readError(err: unknown): string {
     </div>
 
     <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
-      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-end">
+      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem] md:items-end">
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Start date</span>
           <input
@@ -462,6 +472,17 @@ function readError(err: unknown): string {
             <option v-for="option in pageSizeOptions" :key="option" :value="option">
               {{ option }}
             </option>
+          </select>
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Order</span>
+          <select
+            class="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            :value="filters.order"
+            @change="changeOrder"
+          >
+            <option value="desc">Newest</option>
+            <option value="asc">Oldest</option>
           </select>
         </label>
       </div>

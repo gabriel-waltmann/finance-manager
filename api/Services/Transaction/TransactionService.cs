@@ -82,9 +82,15 @@ public class TransactionService(DatabaseContext context)
     var total = await query.CountAsync();
     var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)request.Limit);
 
-    var transactions = await query
-      .OrderByDescending(transaction => transaction.Date)
-      .ThenByDescending(transaction => transaction.Created_at)
+    var orderedQuery = request.Order == "asc"
+      ? query
+        .OrderBy(transaction => transaction.Date)
+        .ThenBy(transaction => transaction.Created_at)
+      : query
+        .OrderByDescending(transaction => transaction.Date)
+        .ThenByDescending(transaction => transaction.Created_at);
+
+    var transactions = await orderedQuery
       .Skip((request.Page - 1) * request.Limit)
       .Take(request.Limit)
       .ToListAsync();

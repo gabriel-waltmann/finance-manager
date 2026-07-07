@@ -35,6 +35,10 @@ function buildListTransactionsQuery(params: ListTransactionParams): string {
     query.set('limit', String(params.limit))
   }
 
+  if (params.order) {
+    query.set('order', params.order)
+  }
+
   if (params.withDeleted !== undefined) {
     query.set('withDeleted', String(params.withDeleted))
   }

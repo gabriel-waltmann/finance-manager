@@ -34,6 +34,13 @@ public class ListTransactionController(
                 return BadRequest(new { error = "Limit must be between 1 and 100." });
             }
 
+            request.Order = request.Order.Trim().ToLowerInvariant();
+
+            if (request.Order != "asc" && request.Order != "desc")
+            {
+                return BadRequest(new { error = "Order must be asc or desc." });
+            }
+
             if (
                 request.StartDate.HasValue &&
                 request.EndDate.HasValue &&

@@ -43,6 +43,7 @@ export interface ListTransactionParams {
   endDate?: string
   page?: number
   limit?: number
+  order?: 'asc' | 'desc'
   withDeleted?: boolean
 }
 
