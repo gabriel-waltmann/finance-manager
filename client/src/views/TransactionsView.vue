@@ -16,7 +16,7 @@ import {
 } from '../api/finance'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
 import { useToast } from '../stores/toast'
-import type { Person, TransactionPayload, TransactionWithPerson } from '../types'
+import type { Person, TransactionPayload, TransactionPerson, TransactionWithPerson } from '../types'
 
 const toast = useToast()
 
@@ -140,9 +140,9 @@ async function changeAssignment(item: TransactionWithPerson, event: Event) {
   setAssignmentBusy(item.transaction.id, true)
 
   try {
-    await persistAssignment(item, nextPersonId)
+    const transactionPerson = await persistAssignment(item, nextPersonId)
+    updateTransactionAssignment(item.transaction.id, transactionPerson)
     toast.success(nextPersonId ? 'Person assigned' : 'Assignment cleared')
-    await loadData()
   } catch (err) {
     select.value = previousPersonId
     toast.error(readError(err))
@@ -151,18 +151,21 @@ async function changeAssignment(item: TransactionWithPerson, event: Event) {
   }
 }
 
-async function persistAssignment(item: TransactionWithPerson, nextPersonId: string) {
+async function persistAssignment(
+  item: TransactionWithPerson,
+  nextPersonId: string,
+): Promise<TransactionPerson | null> {
   const transactionId = item.transaction.id
   const currentAssignment = item.transactionPerson
   const currentPersonId = item.person?.id ?? ''
 
   if (currentPersonId === nextPersonId) {
-    return
+    return currentAssignment
   }
 
   if (!nextPersonId && currentAssignment) {
     await deleteAssignment(currentAssignment.id)
-    return
+    return null
   }
 
   if (nextPersonId && currentAssignment) {
@@ -170,15 +173,39 @@ async function persistAssignment(item: TransactionWithPerson, nextPersonId: stri
       personId: nextPersonId,
       transactionId,
     })
-    return
+
+    return {
+      ...currentAssignment,
+      personId: nextPersonId,
+      transactionId,
+      updated_at: new Date().toISOString(),
+    }
   }
 
   if (nextPersonId) {
-    await createAssignment({
+    return await createAssignment({
       personId: nextPersonId,
       transactionId,
     })
   }
+
+  return null
+}
+
+function updateTransactionAssignment(transactionId: string, transactionPerson: TransactionPerson | null) {
+  const person = transactionPerson
+    ? people.value.find((item) => item.id === transactionPerson.personId) ?? null
+    : null
+
+  transactions.value = transactions.value.map((item) =>
+    item.transaction.id === transactionId
+      ? {
+          ...item,
+          transactionPerson,
+          person,
+        }
+      : item,
+  )
 }
 
 function setAssignmentBusy(transactionId: string, busy: boolean) {
