@@ -59,9 +59,36 @@ public class TransactionService(DatabaseContext context)
   }
 
   // TODO: refactor to use one sql query 
-  public async Task<List<GetTransactionResponse>> ListWithTransactionPerson(bool withDeleted)
+  public async Task<ListTransactionResponse> ListWithTransactionPerson(ListTransactionRequest request)
   {
-    var transactions = await List(withDeleted);
+    var withDeleted = request.WithDeleted == "true";
+    var query = _context.Transactions
+      .Where(transaction => withDeleted || transaction.Deleted_at == null);
+
+    if (request.StartDate.HasValue)
+    {
+      var startDate = request.StartDate.Value.Date;
+
+      query = query.Where(transaction => transaction.Date >= startDate);
+    }
+
+    if (request.EndDate.HasValue)
+    {
+      var nextEndDate = request.EndDate.Value.Date.AddDays(1);
+
+      query = query.Where(transaction => transaction.Date < nextEndDate);
+    }
+
+    var total = await query.CountAsync();
+    var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)request.Limit);
+
+    var transactions = await query
+      .OrderByDescending(transaction => transaction.Date)
+      .ThenByDescending(transaction => transaction.Created_at)
+      .Skip((request.Page - 1) * request.Limit)
+      .Take(request.Limit)
+      .ToListAsync();
+
     var transactionIds = transactions.Select(transaction => transaction.Id).ToList();
 
     var transactionPersons = await _context.TransactionsPerson
@@ -88,15 +115,22 @@ public class TransactionService(DatabaseContext context)
 
     var personById = persons.ToDictionary(person => person.Id);
 
-    return transactions.Select(transaction => new GetTransactionResponse
+    return new ListTransactionResponse
     {
-      Transaction = transaction,
-      TransactionPerson = transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
-      Person = GetPersonFromTransactionPerson(
-        transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
-        personById
-      )
-    }).ToList();
+      Transactions = transactions.Select(transaction => new GetTransactionResponse
+      {
+        Transaction = transaction,
+        TransactionPerson = transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
+        Person = GetPersonFromTransactionPerson(
+          transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
+          personById
+        )
+      }).ToList(),
+      Page = request.Page,
+      Limit = request.Limit,
+      Total = total,
+      TotalPages = totalPages
+    };
   }
 
   public async Task<TransactionModel> Create(CreateTransactionRequest dto) {

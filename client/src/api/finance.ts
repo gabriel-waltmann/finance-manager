@@ -1,6 +1,7 @@
 import { apiRequest } from './http'
 import type {
   ListPersonResponse,
+  ListTransactionParams,
   ListTransactionResponse,
   Person,
   PersonPayload,
@@ -8,12 +9,37 @@ import type {
   TransactionPayload,
   TransactionPerson,
   TransactionPersonPayload,
-  TransactionWithPerson,
 } from '../types'
 
-export async function listTransactions(): Promise<TransactionWithPerson[]> {
-  const response = await apiRequest<ListTransactionResponse>('/transactions')
-  return response.transactions
+export async function listTransactions(params: ListTransactionParams = {}): Promise<ListTransactionResponse> {
+  const queryString = buildListTransactionsQuery(params)
+  return apiRequest<ListTransactionResponse>(queryString ? `/transactions?${queryString}` : '/transactions')
+}
+
+function buildListTransactionsQuery(params: ListTransactionParams): string {
+  const query = new URLSearchParams()
+
+  if (params.startDate) {
+    query.set('startDate', params.startDate)
+  }
+
+  if (params.endDate) {
+    query.set('endDate', params.endDate)
+  }
+
+  if (params.page !== undefined) {
+    query.set('page', String(params.page))
+  }
+
+  if (params.limit !== undefined) {
+    query.set('limit', String(params.limit))
+  }
+
+  if (params.withDeleted !== undefined) {
+    query.set('withDeleted', String(params.withDeleted))
+  }
+
+  return query.toString()
 }
 
 export async function createTransaction(payload: TransactionPayload): Promise<Transaction> {

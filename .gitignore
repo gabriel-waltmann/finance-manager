@@ -216,3 +216,5 @@ FakesAssemblies/
 .env.production
 .env.staging
 .env.local
+
+examples

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { Edit3, FileUp, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Edit3, FileUp, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ModalDialog from '../components/ModalDialog.vue'
 import {
@@ -16,12 +16,19 @@ import {
 } from '../api/finance'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
 import { useToast } from '../stores/toast'
-import type { Person, TransactionPayload, TransactionPerson, TransactionWithPerson } from '../types'
+import type {
+  ListTransactionResponse,
+  Person,
+  TransactionPayload,
+  TransactionPerson,
+  TransactionWithPerson,
+} from '../types'
 
 const toast = useToast()
 
 const transactions = ref<TransactionWithPerson[]>([])
 const people = ref<Person[]>([])
+const pageSizeOptions = [10, 20, 50, 100]
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
@@ -32,6 +39,18 @@ const editing = ref<TransactionWithPerson | null>(null)
 const deleteTarget = ref<TransactionWithPerson | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const assignmentSaving = ref<Record<string, boolean>>({})
+
+const filters = reactive({
+  startDate: '',
+  endDate: '',
+})
+
+const pagination = reactive({
+  page: 1,
+  limit: 20,
+  total: 0,
+  totalPages: 0,
+})
 
 const form = reactive({
   date: '',
@@ -48,6 +67,21 @@ const totalAmount = computed(() =>
   transactions.value.reduce((total, item) => total + Number(item.transaction.amount), 0),
 )
 
+const visibleTotalPages = computed(() => Math.max(pagination.totalPages, 1))
+const hasPreviousPage = computed(() => pagination.page > 1)
+const hasNextPage = computed(() => pagination.page < pagination.totalPages)
+
+const pageRange = computed(() => {
+  if (pagination.total === 0) {
+    return '0 of 0'
+  }
+
+  const start = (pagination.page - 1) * pagination.limit + 1
+  const end = Math.min(start + transactions.value.length - 1, pagination.total)
+
+  return `${start}-${end} of ${pagination.total}`
+})
+
 onMounted(() => {
   void loadData()
 })
@@ -57,15 +91,78 @@ async function loadData() {
   error.value = ''
 
   try {
-    const [transactionRows, personRows] = await Promise.all([listTransactions(), listPeople()])
-    transactions.value = transactionRows
+    const [transactionResponse, personRows] = await Promise.all([
+      listTransactions({
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        page: pagination.page,
+        limit: pagination.limit,
+      }),
+      listPeople(),
+    ])
+
+    applyTransactionResponse(transactionResponse)
     people.value = personRows
+
+    if (
+      transactionResponse.transactions.length === 0 &&
+      transactionResponse.total > 0 &&
+      pagination.page > transactionResponse.totalPages
+    ) {
+      pagination.page = transactionResponse.totalPages
+      const adjustedResponse = await listTransactions({
+        startDate: filters.startDate || undefined,
+        endDate: filters.endDate || undefined,
+        page: pagination.page,
+        limit: pagination.limit,
+      })
+
+      applyTransactionResponse(adjustedResponse)
+    }
   } catch (err) {
     error.value = readError(err)
     toast.error(error.value)
   } finally {
     loading.value = false
   }
+}
+
+function applyTransactionResponse(response: ListTransactionResponse) {
+  transactions.value = response.transactions
+  pagination.page = response.page
+  pagination.limit = response.limit
+  pagination.total = response.total
+  pagination.totalPages = response.totalPages
+}
+
+function applyDateFilter() {
+  pagination.page = 1
+  void loadData()
+}
+
+function changeLimit(event: Event) {
+  const select = event.target as HTMLSelectElement
+  pagination.limit = Number(select.value)
+  pagination.page = 1
+  void loadData()
+}
+
+function goToPreviousPage() {
+  if (!hasPreviousPage.value) {
+    return
+  }
+
+  pagination.page -= 1
+  void loadData()
+}
+
+function goToNextPage() {
+  if (!hasNextPage.value) {
+    return
+  }
+
+  pagination.page += 1
+  void loadData()
 }
 
 function openCreateForm() {
@@ -323,7 +420,7 @@ function readError(err: unknown): string {
     <div class="grid gap-3 md:grid-cols-3">
       <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
         <p class="text-xs font-medium uppercase text-stone-500">Rows</p>
-        <p class="mt-1 text-xl font-semibold text-stone-950">{{ transactions.length }}</p>
+        <p class="mt-1 text-xl font-semibold text-stone-950">{{ pagination.total }}</p>
       </div>
       <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
         <p class="text-xs font-medium uppercase text-stone-500">Assigned</p>
@@ -332,6 +429,41 @@ function readError(err: unknown): string {
       <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
         <p class="text-xs font-medium uppercase text-stone-500">Amount</p>
         <p class="mt-1 text-xl font-semibold text-stone-950">{{ displayAmount(totalAmount) }}</p>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
+      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-end">
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Start date</span>
+          <input
+            v-model="filters.startDate"
+            class="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            type="date"
+            @change="applyDateFilter"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">End date</span>
+          <input
+            v-model="filters.endDate"
+            class="mt-1 w-full rounded-md border border-stone-300 px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            type="date"
+            @change="applyDateFilter"
+          />
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Rows</span>
+          <select
+            class="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            :value="pagination.limit"
+            @change="changeLimit"
+          >
+            <option v-for="option in pageSizeOptions" :key="option" :value="option">
+              {{ option }}
+            </option>
+          </select>
+        </label>
       </div>
     </div>
 
@@ -402,6 +534,37 @@ function readError(err: unknown): string {
             </tr>
           </tbody>
         </table>
+      </div>
+      <div
+        v-if="!loading"
+        class="flex flex-col gap-3 border-t border-stone-200 px-4 py-3 text-sm text-stone-600 md:flex-row md:items-center md:justify-between"
+      >
+        <p>{{ pageRange }}</p>
+        <div class="flex items-center gap-3">
+          <button
+            type="button"
+            class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Previous page"
+            :disabled="!hasPreviousPage"
+            @click="goToPreviousPage"
+          >
+            <ChevronLeft class="size-4" aria-hidden="true" />
+            <span class="sr-only">Previous page</span>
+          </button>
+          <span class="min-w-20 text-center font-medium text-stone-700">
+            {{ pagination.page }} / {{ visibleTotalPages }}
+          </span>
+          <button
+            type="button"
+            class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            title="Next page"
+            :disabled="!hasNextPage"
+            @click="goToNextPage"
+          >
+            <ChevronRight class="size-4" aria-hidden="true" />
+            <span class="sr-only">Next page</span>
+          </button>
+        </div>
       </div>
     </div>
   </section>

@@ -1,6 +1,7 @@
+using api.Requests.Transaction;
+using api.Responses.Transaction;
 using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
-using api.Responses.Transaction;
 
 namespace api.Controllers.Transaction;
 
@@ -15,24 +16,34 @@ public class ListTransactionController(
     private readonly ILogger<ListTransactionController> _logger = logger;
     private readonly TransactionService _service = service;
 
-    public static ListTransactionResponse MapResponse(List<GetTransactionResponse> transactions)
-    {
-        return new ListTransactionResponse
-        {
-            Transactions = transactions
-        };
-    }
   
     [HttpGet]
     public async Task<ActionResult<ListTransactionResponse>> ExecuteAsync(
-        [FromQuery] string? withDeleted
+        [FromQuery] ListTransactionRequest request
     )
     {
         try
         {
-            var transactions = await _service.ListWithTransactionPerson(withDeleted == "true");
+            if (request.Page < 1)
+            {
+                return BadRequest(new { error = "Page must be greater than or equal to 1." });
+            }
 
-            var response = MapResponse(transactions);
+            if (request.Limit < 1 || request.Limit > 100)
+            {
+                return BadRequest(new { error = "Limit must be between 1 and 100." });
+            }
+
+            if (
+                request.StartDate.HasValue &&
+                request.EndDate.HasValue &&
+                request.StartDate.Value.Date > request.EndDate.Value.Date
+            )
+            {
+                return BadRequest(new { error = "Start date must be before or equal to end date." });
+            }
+
+            var response = await _service.ListWithTransactionPerson(request);
             
             return StatusCode(200, response);
         }

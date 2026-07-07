@@ -129,7 +129,23 @@ public class TransactionImportJob(
     {
       Date = DateTime.ParseExact(record.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture),
       Title = record.Title,
-      Amount = decimal.Parse(record.Amount, new CultureInfo("pt-BR"))
+      Amount = ParseAmount(record.Amount)
     };
+  }
+
+  private static decimal ParseAmount(string amount)
+  {
+    var normalized = amount.Trim();
+
+    if (normalized.StartsWith("-", StringComparison.Ordinal))
+    {
+      normalized = $"-{normalized[1..].TrimStart()}";
+    }
+
+    var culture = normalized.Contains(',')
+      ? new CultureInfo("pt-BR")
+      : CultureInfo.InvariantCulture;
+
+    return decimal.Parse(normalized, NumberStyles.Number, culture);
   }
 }

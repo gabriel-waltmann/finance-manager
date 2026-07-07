@@ -32,6 +32,18 @@ export interface TransactionWithPerson {
 
 export interface ListTransactionResponse {
   transactions: TransactionWithPerson[]
+  page: number
+  limit: number
+  total: number
+  totalPages: number
+}
+
+export interface ListTransactionParams {
+  startDate?: string
+  endDate?: string
+  page?: number
+  limit?: number
+  withDeleted?: boolean
 }
 
 export interface ListPersonResponse {
