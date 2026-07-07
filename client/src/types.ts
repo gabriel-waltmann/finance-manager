@@ -1,0 +1,56 @@
+export type Id = string
+
+export interface TimestampedEntity {
+  id: Id
+  created_at: string
+  updated_at: string | null
+  deleted_at: string | null
+}
+
+export interface Transaction extends TimestampedEntity {
+  date: string
+  title: string
+  amount: number
+}
+
+export interface Person extends TimestampedEntity {
+  name: string
+  email: string
+  phoneNumber: string
+}
+
+export interface TransactionPerson extends TimestampedEntity {
+  personId: Id
+  transactionId: Id
+}
+
+export interface TransactionWithPerson {
+  transaction: Transaction
+  transactionPerson: TransactionPerson | null
+  person: Person | null
+}
+
+export interface ListTransactionResponse {
+  transactions: TransactionWithPerson[]
+}
+
+export interface ListPersonResponse {
+  persons: Person[]
+}
+
+export interface TransactionPayload {
+  date: string
+  title: string
+  amount: number
+}
+
+export interface PersonPayload {
+  name: string
+  email: string
+  phoneNumber: string
+}
+
+export interface TransactionPersonPayload {
+  personId: Id
+  transactionId: Id
+}
