@@ -11,6 +11,7 @@ const toast = useToast()
 
 const defaultRange = getPreviousMonthRange()
 const topItems = ref<DashboardTopItem[]>([])
+const dashboardTotalAmount = ref(0)
 const people = ref<Person[]>([])
 const loading = ref(true)
 const error = ref('')
@@ -26,14 +27,12 @@ const chartItems = computed(() =>
   topItems.value.map((item) => ({
     key: item.title,
     label: item.title,
-    value: Number(item.totalAmount),
+    value: item.totalAmount,
     detail: `${item.transactionCount} ${item.transactionCount === 1 ? 'transaction' : 'transactions'}`,
   })),
 )
 
-const totalSpend = computed(() =>
-  topItems.value.reduce((total, item) => total + Number(item.totalAmount), 0),
-)
+const totalSpend = computed(() => dashboardTotalAmount.value)
 
 const totalTransactions = computed(() =>
   topItems.value.reduce((total, item) => total + item.transactionCount, 0),
@@ -75,6 +74,7 @@ async function loadData() {
     ])
 
     topItems.value = dashboard.topItems
+    dashboardTotalAmount.value = dashboard.totalAmount
     people.value = personRows
   } catch (err) {
     error.value = readError(err)
@@ -97,6 +97,7 @@ async function loadDashboard() {
     })
 
     topItems.value = dashboard.topItems
+    dashboardTotalAmount.value = dashboard.totalAmount
   } catch (err) {
     error.value = readError(err)
     toast.error(error.value)
@@ -228,6 +229,10 @@ function readError(err: unknown): string {
           empty-label="No spend found for this range."
           :value-formatter="displayAmount"
         />
+        <div class="mt-4 flex items-center justify-between border-t border-stone-200 pt-4">
+          <span class="text-sm font-medium text-stone-600">Total spend</span>
+          <span class="text-base font-semibold text-stone-950">{{ displayAmount(totalSpend) }}</span>
+        </div>
       </div>
     </div>
   </section>

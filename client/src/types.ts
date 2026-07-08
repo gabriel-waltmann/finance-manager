@@ -55,6 +55,7 @@ export interface DashboardTopItem {
 
 export interface GetDashboardResponse {
   topItems: DashboardTopItem[]
+  totalAmount: number
 }
 
 export interface DashboardParams {

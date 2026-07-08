@@ -45,6 +45,9 @@ public class DashboardService(DatabaseContext context)
         select transaction;
     }
 
+    var totalAmount = await query
+      .SumAsync(transaction => (decimal?)transaction.Amount) ?? 0;
+
     var topItems = await query
       .GroupBy(transaction => transaction.Title)
       .Select(group => new DashboardTopItemResponse
@@ -68,7 +71,8 @@ public class DashboardService(DatabaseContext context)
 
     return new GetDashboardResponse
     {
-      TopItems = topItems
+      TopItems = topItems,
+      TotalAmount = totalAmount
     };
   }
 }
