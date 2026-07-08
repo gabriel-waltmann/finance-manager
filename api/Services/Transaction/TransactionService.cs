@@ -97,6 +97,32 @@ public class TransactionService(DatabaseContext context)
       );
     }
 
+    if (request.PersonId.HasValue)
+    {
+      var personId = request.PersonId.Value;
+
+      query = query.Where(transaction =>
+        _context.TransactionsPerson.Any(transactionPerson =>
+          transactionPerson.TransactionId == transaction.Id &&
+          transactionPerson.Deleted_at == null &&
+          transactionPerson.PersonId == personId &&
+          (withDeleted || _context.Persons.Any(person =>
+            person.Id == transactionPerson.PersonId &&
+            person.Deleted_at == null
+          ))
+        )
+      );
+    }
+    else if (request.Unassigned)
+    {
+      query = query.Where(transaction =>
+        !_context.TransactionsPerson.Any(transactionPerson =>
+          transactionPerson.TransactionId == transaction.Id &&
+          transactionPerson.Deleted_at == null
+        )
+      );
+    }
+
     var total = await query.CountAsync();
     var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)request.Limit);
 

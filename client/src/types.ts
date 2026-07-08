@@ -42,6 +42,8 @@ export interface ListTransactionParams {
   search?: string
   startDate?: string
   endDate?: string
+  personId?: Id
+  unassigned?: boolean
   page?: number
   limit?: number
   order?: 'asc' | 'desc'

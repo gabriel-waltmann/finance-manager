@@ -69,6 +69,14 @@ function buildListTransactionsQuery(params: ListTransactionParams): string {
     query.set('endDate', params.endDate)
   }
 
+  if (params.personId) {
+    query.set('personId', params.personId)
+  }
+
+  if (params.unassigned !== undefined) {
+    query.set('unassigned', String(params.unassigned))
+  }
+
   if (params.page !== undefined) {
     query.set('page', String(params.page))
   }

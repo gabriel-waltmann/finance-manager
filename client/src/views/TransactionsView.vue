@@ -47,6 +47,7 @@ const filters = reactive({
   search: '',
   startDate: '',
   endDate: '',
+  personFilter: '',
   order: 'desc' as 'asc' | 'desc',
 })
 
@@ -158,6 +159,10 @@ function buildListTransactionParams(): ListTransactionParams {
     search: filters.search.trim() || undefined,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
+    personId: filters.personFilter && filters.personFilter !== 'unassigned'
+      ? filters.personFilter
+      : undefined,
+    unassigned: filters.personFilter === 'unassigned' ? true : undefined,
     page: pagination.page,
     limit: pagination.limit,
     order: filters.order,
@@ -183,6 +188,11 @@ function clearSearch() {
 }
 
 function applyDateFilter() {
+  pagination.page = 1
+  void loadData()
+}
+
+function applyPersonFilter() {
   pagination.page = 1
   void loadData()
 }
@@ -511,7 +521,7 @@ function readError(err: unknown): string {
     </div>
 
     <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
-      <div class="grid gap-3 md:grid-cols-[minmax(14rem,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_10rem_10rem] md:items-end">
+      <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(14rem,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_10rem_10rem] lg:items-end">
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Search</span>
           <span class="relative mt-1 block">
@@ -554,6 +564,20 @@ function readError(err: unknown): string {
             type="date"
             @change="applyDateFilter"
           />
+        </label>
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Person</span>
+          <select
+            v-model="filters.personFilter"
+            class="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            @change="applyPersonFilter"
+          >
+            <option value="">All people</option>
+            <option value="unassigned">Unassigned</option>
+            <option v-for="person in people" :key="person.id" :value="person.id">
+              {{ person.name }}
+            </option>
+          </select>
         </label>
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Rows</span>

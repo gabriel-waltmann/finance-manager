@@ -44,6 +44,11 @@ public class ListTransactionController(
                 return BadRequest(new { error = "Order must be asc or desc." });
             }
 
+            if (request.PersonId.HasValue && request.Unassigned)
+            {
+                return BadRequest(new { error = "PersonId and unassigned cannot be used together." });
+            }
+
             if (
                 request.StartDate.HasValue &&
                 request.EndDate.HasValue &&
