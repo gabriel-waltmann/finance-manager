@@ -49,10 +49,10 @@ public class DashboardService(DatabaseContext context)
       .SumAsync(transaction => (decimal?)-transaction.Amount) ?? 0;
 
     var topItems = await query
-      .GroupBy(transaction => transaction.Title)
+      .GroupBy(transaction => transaction.Title.ToLower())
       .Select(group => new DashboardTopItemResponse
       {
-        Title = group.Key,
+        Title = group.Min(transaction => transaction.Title)!,
         TotalAmount = group.Sum(transaction => -transaction.Amount),
         TransactionCount = group.Count()
       })
