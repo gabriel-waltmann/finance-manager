@@ -26,6 +26,11 @@ public class TransactionImportJob(
   private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
   private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
   private readonly ILogger<TransactionImportJob> _logger = logger;
+  private static readonly string[] IgnoredImportTitleTexts =
+  [
+    "Pagamento recebido",
+    "Pagamento de fatura"
+  ];
 
   protected override async Task ExecuteAsync(CancellationToken stoppingToken)
   {
@@ -132,6 +137,7 @@ public class TransactionImportJob(
   {
     return ParseCsv<CreditCardNubankFile>(data)
       .Select(MapTransactionRequest)
+      .Where(request => !ShouldIgnoreImport(request.Title))
       .ToList();
   }
 
@@ -139,6 +145,7 @@ public class TransactionImportJob(
   {
     return ParseCsv<NubankExtratoFile>(data)
       .Select(MapTransactionRequest)
+      .Where(request => !ShouldIgnoreImport(request.Title))
       .ToList();
   }
 
@@ -185,5 +192,11 @@ public class TransactionImportJob(
       : CultureInfo.InvariantCulture;
 
     return decimal.Parse(normalized, NumberStyles.Number, culture);
+  }
+
+  private static bool ShouldIgnoreImport(string title)
+  {
+    return IgnoredImportTitleTexts.Any(ignoredText =>
+      title.Contains(ignoredText, StringComparison.OrdinalIgnoreCase));
   }
 }

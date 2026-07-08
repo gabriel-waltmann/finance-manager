@@ -14,7 +14,7 @@ public class DashboardService(DatabaseContext context)
     var query = _context.Transactions
       .Where(transaction =>
         transaction.Deleted_at == null &&
-        transaction.Amount > 0
+        transaction.Amount < 0
       );
 
     if (request.StartDate.HasValue)
@@ -46,14 +46,14 @@ public class DashboardService(DatabaseContext context)
     }
 
     var totalAmount = await query
-      .SumAsync(transaction => (decimal?)transaction.Amount) ?? 0;
+      .SumAsync(transaction => (decimal?)-transaction.Amount) ?? 0;
 
     var topItems = await query
       .GroupBy(transaction => transaction.Title)
       .Select(group => new DashboardTopItemResponse
       {
         Title = group.Key,
-        TotalAmount = group.Sum(transaction => transaction.Amount),
+        TotalAmount = group.Sum(transaction => -transaction.Amount),
         TransactionCount = group.Count()
       })
       .OrderByDescending(item => item.TotalAmount)
