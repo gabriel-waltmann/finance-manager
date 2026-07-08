@@ -17,6 +17,7 @@ import {
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
 import { useToast } from '../stores/toast'
 import type {
+  FileCategory,
   ListTransactionResponse,
   Person,
   TransactionPayload,
@@ -39,6 +40,7 @@ const editing = ref<TransactionWithPerson | null>(null)
 const deleteTarget = ref<TransactionWithPerson | null>(null)
 const fileInput = ref<HTMLInputElement | null>(null)
 const assignmentSaving = ref<Record<string, boolean>>({})
+const uploadCategory = ref<FileCategory>('CreditCard')
 
 const filters = reactive({
   startDate: '',
@@ -75,6 +77,10 @@ const hasNextPage = computed(() => pagination.page < pagination.totalPages)
 const pageRange = computed(() => {
   if (pagination.total === 0) {
     return '0 of 0'
+  }
+
+  if (transactions.value.length === 0) {
+    return `0 of ${pagination.total}`
   }
 
   const start = (pagination.page - 1) * pagination.limit + 1
@@ -331,18 +337,31 @@ function confirmDelete(item: TransactionWithPerson) {
   deleteTarget.value = item
 }
 
+function removeTransactionFromView(transactionId: string) {
+  transactions.value = transactions.value.filter((item) => item.transaction.id !== transactionId)
+  pagination.total = Math.max(pagination.total - 1, 0)
+  pagination.totalPages = pagination.total === 0 ? 0 : Math.ceil(pagination.total / pagination.limit)
+
+  if (pagination.total === 0) {
+    pagination.page = 1
+  } else if (pagination.page > pagination.totalPages) {
+    pagination.page = pagination.totalPages
+  }
+}
+
 async function executeDelete() {
   if (!deleteTarget.value) {
     return
   }
 
+  const transactionId = deleteTarget.value.transaction.id
   deleting.value = true
 
   try {
-    await deleteTransaction(deleteTarget.value.transaction.id)
+    await deleteTransaction(transactionId)
+    removeTransactionFromView(transactionId)
     toast.success('Transaction deleted')
     deleteTarget.value = null
-    await loadData()
   } catch (err) {
     toast.error(readError(err))
   } finally {
@@ -365,7 +384,7 @@ async function uploadFile(event: Event) {
   uploadPending.value = true
 
   try {
-    await uploadTransactions(file)
+    await uploadTransactions(file, uploadCategory.value)
     toast.success('Import submitted')
     window.setTimeout(() => {
       void loadData()
@@ -392,6 +411,17 @@ function readError(err: unknown): string {
       </div>
 
       <div class="flex flex-wrap gap-3">
+        <label class="block min-w-36">
+          <span class="sr-only">Category</span>
+          <select
+            v-model="uploadCategory"
+            class="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:bg-stone-100"
+            :disabled="uploadPending"
+          >
+            <option value="CreditCard">Credit card</option>
+            <option value="Extrato">Extrato</option>
+          </select>
+        </label>
         <input
           ref="fileInput"
           class="hidden"

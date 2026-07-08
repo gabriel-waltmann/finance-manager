@@ -1,6 +1,7 @@
 using api.Exceptions;
 using api.Models.Database;
 using api.Models.File;
+using api.Models.FileCategory;
 
 namespace api.Services.File;
 
@@ -8,7 +9,7 @@ public class FileService(DatabaseContext context)
 {
   private readonly DatabaseContext _context = context;
 
-  public async Task<FileModel> CreateFromFormFileAsync(IFormFile file)
+  public async Task<FileModel> CreateFromFormFileAsync(IFormFile file, FileCategoryName category)
   {
     await using var stream = file.OpenReadStream();
     using var memoryStream = new MemoryStream();
@@ -20,6 +21,7 @@ public class FileService(DatabaseContext context)
       Id = Guid.NewGuid(),
       Name = file.FileName,
       Data = memoryStream.ToArray(),
+      Category = category,
       Created_at = DateTime.UtcNow
     };
 

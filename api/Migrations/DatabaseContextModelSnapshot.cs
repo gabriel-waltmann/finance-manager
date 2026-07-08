@@ -38,6 +38,10 @@ namespace api.Migrations
                         .HasColumnType("bytea")
                         .HasColumnName("data");
 
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
                     b.Property<DateTime?>("Deleted_at")
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("deleted_at");

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations.Schema;
+using api.Models.FileCategory;
 
 namespace api.Models.File;
 
@@ -13,6 +14,9 @@ public class FileModel
 
   [Column("data")]
   public required byte[] Data { get; set; }
+
+  [Column("category")]
+  public required FileCategoryName Category { get; set; }
 
   [Column("created_at")]
   public required DateTime Created_at { get; set; }

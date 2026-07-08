@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using api.Exceptions;
+using api.Models.FileCategory;
 using api.Models.Files;
 using api.Models.Job;
 using api.Requests.Transaction;
@@ -65,17 +66,17 @@ public class TransactionImportJob(
       await fileProcessingService.MarkProcessing(payload.FileProcessingId);
 
       var file = await fileService.Get(payload.FileId);
-      var records = ParseNubankCsv(file.Data);
+      var requests = MapTransactionRequests(file.Category, file.Data);
 
       await using var importTransaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
-      foreach (var record in records)
+      foreach (var request in requests)
       {
         cancellationToken.ThrowIfCancellationRequested();
 
         try
         {
-          var transaction = await transactionService.Create(MapTransactionRequest(record));
+          var transaction = await transactionService.Create(request);
 
           await transactionImportService.Create(payload.FileProcessingId, transaction.Id, cancellationToken);
         }
@@ -114,13 +115,40 @@ public class TransactionImportJob(
     }
   }
 
-  private static List<CreditCardNubankFile> ParseNubankCsv(byte[] data)
+  private static List<CreateTransactionRequest> MapTransactionRequests(
+    FileCategoryName category,
+    byte[] data
+  )
+  {
+    return category switch
+    {
+      FileCategoryName.CreditCard => ParseCreditCardTransactionRequests(data),
+      FileCategoryName.Extrato => ParseExtratoTransactionRequests(data),
+      _ => throw new InvalidOperationException($"Unsupported file category: {category}")
+    };
+  }
+
+  private static List<CreateTransactionRequest> ParseCreditCardTransactionRequests(byte[] data)
+  {
+    return ParseCsv<CreditCardNubankFile>(data)
+      .Select(MapTransactionRequest)
+      .ToList();
+  }
+
+  private static List<CreateTransactionRequest> ParseExtratoTransactionRequests(byte[] data)
+  {
+    return ParseCsv<NubankExtratoFile>(data)
+      .Select(MapTransactionRequest)
+      .ToList();
+  }
+
+  private static List<ModelFile> ParseCsv<ModelFile>(byte[] data)
   {
     using var stream = new MemoryStream(data);
     using var reader = new StreamReader(stream, Encoding.UTF8);
     using var csv = new CsvReader(reader, CultureInfo.InvariantCulture);
 
-    return csv.GetRecords<CreditCardNubankFile>().ToList();
+    return csv.GetRecords<ModelFile>().ToList();
   }
 
   private static CreateTransactionRequest MapTransactionRequest(CreditCardNubankFile record)
@@ -130,6 +158,16 @@ public class TransactionImportJob(
       Date = DateTime.ParseExact(record.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture),
       Title = record.Title,
       Amount = ParseAmount(record.Amount)
+    };
+  }
+
+  private static CreateTransactionRequest MapTransactionRequest(NubankExtratoFile record)
+  {
+    return new CreateTransactionRequest
+    {
+      Date = DateTime.ParseExact(record.Data, "dd/MM/yyyy", CultureInfo.InvariantCulture),
+      Title = record.Descricao,
+      Amount = ParseAmount(record.Valor)
     };
   }
 

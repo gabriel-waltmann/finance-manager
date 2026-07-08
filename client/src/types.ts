@@ -65,6 +65,8 @@ export interface DashboardParams {
   order?: 'asc' | 'desc'
 }
 
+export type FileCategory = 'CreditCard' | 'Extrato'
+
 export interface ListPersonResponse {
   persons: Person[]
 }

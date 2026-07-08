@@ -1,6 +1,7 @@
 import { apiRequest } from './http'
 import type {
   DashboardParams,
+  FileCategory,
   GetDashboardResponse,
   ListPersonResponse,
   ListTransactionParams,
@@ -95,9 +96,10 @@ export async function deleteTransaction(id: string): Promise<void> {
   })
 }
 
-export async function uploadTransactions(file: File): Promise<void> {
+export async function uploadTransactions(file: File, category: FileCategory): Promise<void> {
   const body = new FormData()
   body.append('File', file)
+  body.append('Category', category)
 
   await apiRequest<void>('/transaction/upload', {
     method: 'POST',
