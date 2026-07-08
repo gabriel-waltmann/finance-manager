@@ -79,6 +79,24 @@ public class TransactionService(DatabaseContext context)
       query = query.Where(transaction => transaction.Date < nextEndDate);
     }
 
+    if (!string.IsNullOrWhiteSpace(request.Search))
+    {
+      var searchPattern = $"%{EscapeLikePattern(request.Search)}%";
+
+      query = query.Where(transaction =>
+        EF.Functions.ILike(transaction.Title, searchPattern, "\\") ||
+        _context.TransactionsPerson.Any(transactionPerson =>
+          transactionPerson.TransactionId == transaction.Id &&
+          (withDeleted || transactionPerson.Deleted_at == null) &&
+          _context.Persons.Any(person =>
+            person.Id == transactionPerson.PersonId &&
+            (withDeleted || person.Deleted_at == null) &&
+            EF.Functions.ILike(person.Name, searchPattern, "\\")
+          )
+        )
+      );
+    }
+
     var total = await query.CountAsync();
     var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)request.Limit);
 
@@ -210,5 +228,13 @@ public class TransactionService(DatabaseContext context)
     return transactionPerson == null
       ? null
       : personById.GetValueOrDefault(transactionPerson.PersonId);
+  }
+
+  private static string EscapeLikePattern(string value)
+  {
+    return value
+      .Replace("\\", "\\\\")
+      .Replace("%", "\\%")
+      .Replace("_", "\\_");
   }
 }

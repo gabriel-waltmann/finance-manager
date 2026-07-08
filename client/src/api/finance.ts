@@ -49,6 +49,10 @@ export async function listTransactions(params: ListTransactionParams = {}): Prom
 function buildListTransactionsQuery(params: ListTransactionParams): string {
   const query = new URLSearchParams()
 
+  if (params.search) {
+    query.set('search', params.search)
+  }
+
   if (params.startDate) {
     query.set('startDate', params.startDate)
   }

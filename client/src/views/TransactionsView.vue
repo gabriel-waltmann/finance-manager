@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { ChevronLeft, ChevronRight, Edit3, FileUp, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { ChevronLeft, ChevronRight, Edit3, FileUp, Plus, RefreshCw, Search, Trash2, X } from 'lucide-vue-next'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ModalDialog from '../components/ModalDialog.vue'
 import {
@@ -19,6 +19,7 @@ import { useToast } from '../stores/toast'
 import type {
   FileCategory,
   ListTransactionResponse,
+  ListTransactionParams,
   Person,
   TransactionPayload,
   TransactionPerson,
@@ -43,6 +44,7 @@ const assignmentSaving = ref<Record<string, boolean>>({})
 const uploadCategory = ref<FileCategory>('CreditCard')
 
 const filters = reactive({
+  search: '',
   startDate: '',
   endDate: '',
   order: 'desc' as 'asc' | 'desc',
@@ -61,6 +63,8 @@ const form = reactive({
   amount: '',
   personId: '',
 })
+
+let searchDebounce: ReturnType<typeof window.setTimeout> | undefined
 
 const assignedCount = computed(
   () => transactions.value.filter((item) => item.transactionPerson !== null).length,
@@ -93,19 +97,30 @@ onMounted(() => {
   void loadData()
 })
 
+onBeforeUnmount(() => {
+  clearSearchDebounce()
+})
+
+watch(
+  () => filters.search,
+  () => {
+    clearSearchDebounce()
+
+    searchDebounce = window.setTimeout(() => {
+      pagination.page = 1
+      void loadData()
+    }, 300)
+  },
+  { flush: 'sync' },
+)
+
 async function loadData() {
   loading.value = true
   error.value = ''
 
   try {
     const [transactionResponse, personRows] = await Promise.all([
-      listTransactions({
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-        page: pagination.page,
-        limit: pagination.limit,
-        order: filters.order,
-      }),
+      listTransactions(buildListTransactionParams()),
       listPeople(),
     ])
 
@@ -118,13 +133,7 @@ async function loadData() {
       pagination.page > transactionResponse.totalPages
     ) {
       pagination.page = transactionResponse.totalPages
-      const adjustedResponse = await listTransactions({
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-        page: pagination.page,
-        limit: pagination.limit,
-        order: filters.order,
-      })
+      const adjustedResponse = await listTransactions(buildListTransactionParams())
 
       applyTransactionResponse(adjustedResponse)
     }
@@ -142,6 +151,35 @@ function applyTransactionResponse(response: ListTransactionResponse) {
   pagination.limit = response.limit
   pagination.total = response.total
   pagination.totalPages = response.totalPages
+}
+
+function buildListTransactionParams(): ListTransactionParams {
+  return {
+    search: filters.search.trim() || undefined,
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+    page: pagination.page,
+    limit: pagination.limit,
+    order: filters.order,
+  }
+}
+
+function clearSearchDebounce() {
+  if (searchDebounce !== undefined) {
+    window.clearTimeout(searchDebounce)
+    searchDebounce = undefined
+  }
+}
+
+function clearSearch() {
+  if (!filters.search) {
+    return
+  }
+
+  filters.search = ''
+  clearSearchDebounce()
+  pagination.page = 1
+  void loadData()
 }
 
 function applyDateFilter() {
@@ -473,7 +511,32 @@ function readError(err: unknown): string {
     </div>
 
     <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
-      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_10rem_10rem] md:items-end">
+      <div class="grid gap-3 md:grid-cols-[minmax(14rem,1.4fr)_minmax(0,1fr)_minmax(0,1fr)_10rem_10rem] md:items-end">
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Search</span>
+          <span class="relative mt-1 block">
+            <Search
+              class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400"
+              aria-hidden="true"
+            />
+            <input
+              v-model="filters.search"
+              class="w-full rounded-md border border-stone-300 py-2 pl-9 pr-10 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+              type="search"
+              placeholder="Title or person"
+            />
+            <button
+              v-if="filters.search"
+              type="button"
+              class="absolute right-1.5 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              title="Clear search"
+              @click="clearSearch"
+            >
+              <X class="size-4" aria-hidden="true" />
+              <span class="sr-only">Clear search</span>
+            </button>
+          </span>
+        </label>
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Start date</span>
           <input

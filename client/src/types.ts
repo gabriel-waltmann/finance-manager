@@ -39,6 +39,7 @@ export interface ListTransactionResponse {
 }
 
 export interface ListTransactionParams {
+  search?: string
   startDate?: string
   endDate?: string
   page?: number

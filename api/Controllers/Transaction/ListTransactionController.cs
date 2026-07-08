@@ -34,6 +34,9 @@ public class ListTransactionController(
                 return BadRequest(new { error = "Limit must be between 1 and 100." });
             }
 
+            request.Search = string.IsNullOrWhiteSpace(request.Search)
+                ? null
+                : request.Search.Trim();
             request.Order = request.Order.Trim().ToLowerInvariant();
 
             if (request.Order != "asc" && request.Order != "desc")
