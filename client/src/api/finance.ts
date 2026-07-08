@@ -34,6 +34,14 @@ function buildDashboardQuery(params: DashboardParams): string {
     query.set('personId', params.personId)
   }
 
+  if (params.page !== undefined) {
+    query.set('page', String(params.page))
+  }
+
+  if (params.limit !== undefined) {
+    query.set('limit', String(params.limit))
+  }
+
   if (params.order) {
     query.set('order', params.order)
   }

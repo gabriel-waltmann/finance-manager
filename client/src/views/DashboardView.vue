@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { RefreshCw } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
 import HorizontalBarChart from '../components/HorizontalBarChart.vue'
 import { getDashboard, listPeople } from '../api/finance'
 import { displayAmount, displayDate } from '../lib/format'
 import { useToast } from '../stores/toast'
-import type { DashboardTopItem, Person } from '../types'
+import type { DashboardTopItem, GetDashboardResponse, Person } from '../types'
 
 const toast = useToast()
 
@@ -13,6 +13,7 @@ const defaultRange = getPreviousMonthRange()
 const topItems = ref<DashboardTopItem[]>([])
 const dashboardTotalAmount = ref(0)
 const people = ref<Person[]>([])
+const pageSizeOptions = [10, 20, 50, 100]
 const loading = ref(true)
 const error = ref('')
 
@@ -21,6 +22,13 @@ const filters = reactive({
   endDate: defaultRange.endDate,
   personId: '',
   order: 'desc' as 'asc' | 'desc',
+})
+
+const pagination = reactive({
+  page: 1,
+  limit: 20,
+  total: 0,
+  totalPages: 0,
 })
 
 const chartItems = computed(() =>
@@ -37,6 +45,25 @@ const totalSpend = computed(() => dashboardTotalAmount.value)
 const totalTransactions = computed(() =>
   topItems.value.reduce((total, item) => total + item.transactionCount, 0),
 )
+
+const visibleTotalPages = computed(() => Math.max(pagination.totalPages, 1))
+const hasPreviousPage = computed(() => pagination.page > 1)
+const hasNextPage = computed(() => pagination.page < pagination.totalPages)
+
+const pageRange = computed(() => {
+  if (pagination.total === 0) {
+    return '0 of 0'
+  }
+
+  if (topItems.value.length === 0) {
+    return `0 of ${pagination.total}`
+  }
+
+  const start = (pagination.page - 1) * pagination.limit + 1
+  const end = Math.min(start + topItems.value.length - 1, pagination.total)
+
+  return `${start}-${end} of ${pagination.total}`
+})
 
 const selectedRangeLabel = computed(() => {
   if (filters.startDate && filters.endDate) {
@@ -64,18 +91,23 @@ async function loadData() {
 
   try {
     const [dashboard, personRows] = await Promise.all([
-      getDashboard({
-        startDate: filters.startDate || undefined,
-        endDate: filters.endDate || undefined,
-        personId: filters.personId || undefined,
-        order: filters.order,
-      }),
+      getDashboard(buildDashboardParams()),
       listPeople(),
     ])
 
-    topItems.value = dashboard.topItems
-    dashboardTotalAmount.value = dashboard.totalAmount
+    applyDashboardResponse(dashboard)
     people.value = personRows
+
+    if (
+      dashboard.topItems.length === 0 &&
+      dashboard.total > 0 &&
+      pagination.page > dashboard.totalPages
+    ) {
+      pagination.page = dashboard.totalPages
+      const adjustedDashboard = await getDashboard(buildDashboardParams())
+
+      applyDashboardResponse(adjustedDashboard)
+    }
   } catch (err) {
     error.value = readError(err)
     toast.error(error.value)
@@ -89,15 +121,20 @@ async function loadDashboard() {
   error.value = ''
 
   try {
-    const dashboard = await getDashboard({
-      startDate: filters.startDate || undefined,
-      endDate: filters.endDate || undefined,
-      personId: filters.personId || undefined,
-      order: filters.order,
-    })
+    const dashboard = await getDashboard(buildDashboardParams())
 
-    topItems.value = dashboard.topItems
-    dashboardTotalAmount.value = dashboard.totalAmount
+    applyDashboardResponse(dashboard)
+
+    if (
+      dashboard.topItems.length === 0 &&
+      dashboard.total > 0 &&
+      pagination.page > dashboard.totalPages
+    ) {
+      pagination.page = dashboard.totalPages
+      const adjustedDashboard = await getDashboard(buildDashboardParams())
+
+      applyDashboardResponse(adjustedDashboard)
+    }
   } catch (err) {
     error.value = readError(err)
     toast.error(error.value)
@@ -106,7 +143,53 @@ async function loadDashboard() {
   }
 }
 
+function applyDashboardResponse(response: GetDashboardResponse) {
+  topItems.value = response.topItems
+  dashboardTotalAmount.value = response.totalAmount
+  pagination.page = response.page
+  pagination.limit = response.limit
+  pagination.total = response.total
+  pagination.totalPages = response.totalPages
+}
+
+function buildDashboardParams() {
+  return {
+    startDate: filters.startDate || undefined,
+    endDate: filters.endDate || undefined,
+    personId: filters.personId || undefined,
+    page: pagination.page,
+    limit: pagination.limit,
+    order: filters.order,
+  }
+}
+
 function applyFilters() {
+  pagination.page = 1
+  void loadDashboard()
+}
+
+function changeLimit(event: Event) {
+  const select = event.target as HTMLSelectElement
+  pagination.limit = Number(select.value)
+  pagination.page = 1
+  void loadDashboard()
+}
+
+function goToPreviousPage() {
+  if (!hasPreviousPage.value) {
+    return
+  }
+
+  pagination.page -= 1
+  void loadDashboard()
+}
+
+function goToNextPage() {
+  if (!hasNextPage.value) {
+    return
+  }
+
+  pagination.page += 1
   void loadDashboard()
 }
 
@@ -154,7 +237,7 @@ function readError(err: unknown): string {
     <div class="grid gap-3 md:grid-cols-3">
       <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
         <p class="text-xs font-medium uppercase text-stone-500">Top items</p>
-        <p class="mt-1 text-xl font-semibold text-stone-950">{{ topItems.length }}</p>
+        <p class="mt-1 text-xl font-semibold text-stone-950">{{ pagination.total }}</p>
       </div>
       <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
         <p class="text-xs font-medium uppercase text-stone-500">Transactions</p>
@@ -167,7 +250,7 @@ function readError(err: unknown): string {
     </div>
 
     <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
-      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-end">
+      <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_10rem_8rem] md:items-end">
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Start date</span>
           <input
@@ -210,6 +293,18 @@ function readError(err: unknown): string {
             <option value="asc">Lowest</option>
           </select>
         </label>
+        <label class="block">
+          <span class="text-sm font-medium text-stone-700">Page size</span>
+          <select
+            :value="pagination.limit"
+            class="mt-1 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+            @change="changeLimit"
+          >
+            <option v-for="option in pageSizeOptions" :key="option" :value="option">
+              {{ option }}
+            </option>
+          </select>
+        </label>
       </div>
     </div>
 
@@ -232,6 +327,34 @@ function readError(err: unknown): string {
         <div class="mt-4 flex items-center justify-between border-t border-stone-200 pt-4">
           <span class="text-sm font-medium text-stone-600">Total spend</span>
           <span class="text-base font-semibold text-stone-950">{{ displayAmount(totalSpend) }}</span>
+        </div>
+        <div class="mt-4 flex flex-col gap-3 border-t border-stone-200 pt-4 text-sm text-stone-600 md:flex-row md:items-center md:justify-between">
+          <p>{{ pageRange }}</p>
+          <div class="flex items-center gap-3">
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Previous page"
+              :disabled="!hasPreviousPage"
+              @click="goToPreviousPage"
+            >
+              <ChevronLeft class="size-4" aria-hidden="true" />
+              <span class="sr-only">Previous page</span>
+            </button>
+            <span class="min-w-20 text-center font-medium text-stone-700">
+              {{ pagination.page }} / {{ visibleTotalPages }}
+            </span>
+            <button
+              type="button"
+              class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Next page"
+              :disabled="!hasNextPage"
+              @click="goToNextPage"
+            >
+              <ChevronRight class="size-4" aria-hidden="true" />
+              <span class="sr-only">Next page</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

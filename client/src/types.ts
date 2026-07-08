@@ -57,12 +57,18 @@ export interface DashboardTopItem {
 export interface GetDashboardResponse {
   topItems: DashboardTopItem[]
   totalAmount: number
+  page: number
+  limit: number
+  total: number
+  totalPages: number
 }
 
 export interface DashboardParams {
   startDate?: string
   endDate?: string
   personId?: Id
+  page?: number
+  limit?: number
   order?: 'asc' | 'desc'
 }
 
