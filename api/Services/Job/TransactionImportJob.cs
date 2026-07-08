@@ -136,7 +136,7 @@ public class TransactionImportJob(
   private static List<CreateTransactionRequest> ParseCreditCardTransactionRequests(byte[] data)
   {
     return ParseCsv<CreditCardNubankFile>(data)
-      .Select(MapTransactionRequest)
+      .Select(MapCreditCardTransactionRequest)
       .Where(request => !ShouldIgnoreImport(request.Title))
       .ToList();
   }
@@ -158,13 +158,13 @@ public class TransactionImportJob(
     return csv.GetRecords<ModelFile>().ToList();
   }
 
-  private static CreateTransactionRequest MapTransactionRequest(CreditCardNubankFile record)
+  private static CreateTransactionRequest MapCreditCardTransactionRequest(CreditCardNubankFile record)
   {
     return new CreateTransactionRequest
     {
       Date = DateTime.ParseExact(record.Date, "yyyy-MM-dd", CultureInfo.InvariantCulture),
       Title = record.Title,
-      Amount = ParseAmount(record.Amount)
+      Amount = NormalizeCreditCardAmount(ParseAmount(record.Amount))
     };
   }
 
@@ -192,6 +192,11 @@ public class TransactionImportJob(
       : CultureInfo.InvariantCulture;
 
     return decimal.Parse(normalized, NumberStyles.Number, culture);
+  }
+
+  private static decimal NormalizeCreditCardAmount(decimal amount)
+  {
+    return amount > 0 ? -amount : amount;
   }
 
   private static bool ShouldIgnoreImport(string title)
