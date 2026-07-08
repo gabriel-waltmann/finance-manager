@@ -1,5 +1,7 @@
 import { apiRequest } from './http'
 import type {
+  DashboardParams,
+  GetDashboardResponse,
   ListPersonResponse,
   ListTransactionParams,
   ListTransactionResponse,
@@ -10,6 +12,33 @@ import type {
   TransactionPerson,
   TransactionPersonPayload,
 } from '../types'
+
+export async function getDashboard(params: DashboardParams = {}): Promise<GetDashboardResponse> {
+  const queryString = buildDashboardQuery(params)
+  return apiRequest<GetDashboardResponse>(queryString ? `/dashboard?${queryString}` : '/dashboard')
+}
+
+function buildDashboardQuery(params: DashboardParams): string {
+  const query = new URLSearchParams()
+
+  if (params.startDate) {
+    query.set('startDate', params.startDate)
+  }
+
+  if (params.endDate) {
+    query.set('endDate', params.endDate)
+  }
+
+  if (params.personId) {
+    query.set('personId', params.personId)
+  }
+
+  if (params.order) {
+    query.set('order', params.order)
+  }
+
+  return query.toString()
+}
 
 export async function listTransactions(params: ListTransactionParams = {}): Promise<ListTransactionResponse> {
   const queryString = buildListTransactionsQuery(params)

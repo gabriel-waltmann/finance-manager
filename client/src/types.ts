@@ -47,6 +47,23 @@ export interface ListTransactionParams {
   withDeleted?: boolean
 }
 
+export interface DashboardTopItem {
+  title: string
+  totalAmount: number
+  transactionCount: number
+}
+
+export interface GetDashboardResponse {
+  topItems: DashboardTopItem[]
+}
+
+export interface DashboardParams {
+  startDate?: string
+  endDate?: string
+  personId?: Id
+  order?: 'asc' | 'desc'
+}
+
 export interface ListPersonResponse {
   persons: Person[]
 }

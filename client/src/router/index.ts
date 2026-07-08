@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import DashboardView from '../views/DashboardView.vue'
 import TransactionsView from '../views/TransactionsView.vue'
 import PeopleView from '../views/PeopleView.vue'
 
@@ -7,7 +8,8 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/transactions',
+      name: 'dashboard',
+      component: DashboardView,
     },
     {
       path: '/transactions',

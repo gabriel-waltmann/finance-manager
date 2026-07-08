@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using api.Services.Transaction;
+using api.Services.Dashboard;
 using api.Services.File;
 using api.Services.FileProcessing;
 using api.Services.Job;
@@ -34,6 +35,7 @@ builder.Services.AddSingleton<IConnectionMultiplexer>(
 
 // Services
 builder.Services.AddScoped<TransactionService>();
+builder.Services.AddScoped<DashboardService>();
 builder.Services.AddScoped<PersonService>();
 builder.Services.AddScoped<TransactionPersonService>();
 builder.Services.AddScoped<FileService>();
