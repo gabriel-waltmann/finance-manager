@@ -2,6 +2,7 @@ using api.Models.Database;
 using api.Requests.Dashboard;
 using api.Responses.Dashboard;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace api.Services.Dashboard;
 
@@ -73,9 +74,53 @@ public class DashboardService(DatabaseContext context)
       .Take(request.Limit)
       .ToListAsync();
 
+    var fixedSpendRows = await query
+      .Select(transaction => new
+      {
+        transaction.Title,
+        NormalizedTitle = transaction.Title.ToLower(),
+        transaction.Date,
+        transaction.Created_at,
+        transaction.Amount
+      })
+      .ToListAsync();
+
+    var fixedSpendsQuery = fixedSpendRows
+      .GroupBy(transaction => transaction.NormalizedTitle)
+      .Select(group =>
+      {
+        var latestTransaction = group
+          .OrderByDescending(transaction => transaction.Date)
+          .ThenByDescending(transaction => transaction.Created_at)
+          .First();
+
+        return new DashboardFixedSpendResponse
+        {
+          Title = latestTransaction.Title,
+          MonthCount = group
+            .Select(transaction => new { transaction.Date.Year, transaction.Date.Month })
+            .Distinct()
+            .Count(),
+          LastMonth = latestTransaction.Date.ToString("yyyy-MM", CultureInfo.InvariantCulture),
+          LastAmount = -latestTransaction.Amount
+        };
+      })
+      .Where(item => item.MonthCount >= 2);
+
+    var fixedSpends = request.Order == "asc"
+      ? fixedSpendsQuery
+        .OrderBy(item => item.LastAmount)
+        .ThenBy(item => item.Title)
+        .ToList()
+      : fixedSpendsQuery
+        .OrderByDescending(item => item.LastAmount)
+        .ThenBy(item => item.Title)
+        .ToList();
+
     return new GetDashboardResponse
     {
       TopItems = topItems,
+      FixedSpends = fixedSpends,
       TotalAmount = totalAmount,
       Page = request.Page,
       Limit = request.Limit,

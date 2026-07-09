@@ -5,12 +5,13 @@ import HorizontalBarChart from '../components/HorizontalBarChart.vue'
 import { getDashboard, listPeople } from '../api/finance'
 import { displayAmount, displayDate } from '../lib/format'
 import { useToast } from '../stores/toast'
-import type { DashboardTopItem, GetDashboardResponse, Person } from '../types'
+import type { DashboardFixedSpend, DashboardTopItem, GetDashboardResponse, Person } from '../types'
 
 const toast = useToast()
 
 const defaultRange = getPreviousMonthRange()
 const topItems = ref<DashboardTopItem[]>([])
+const fixedSpends = ref<DashboardFixedSpend[]>([])
 const dashboardTotalAmount = ref(0)
 const people = ref<Person[]>([])
 const pageSizeOptions = [10, 20, 50, 100]
@@ -145,6 +146,7 @@ async function loadDashboard() {
 
 function applyDashboardResponse(response: GetDashboardResponse) {
   topItems.value = response.topItems
+  fixedSpends.value = response.fixedSpends
   dashboardTotalAmount.value = response.totalAmount
   pagination.page = response.page
   pagination.limit = response.limit
@@ -208,6 +210,16 @@ function toInputDate(date: Date): string {
   const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
 
   return localDate.toISOString().slice(0, 10)
+}
+
+function displayMonth(value: string): string {
+  const [year, month] = value.split('-')
+
+  if (!year || !month) {
+    return value
+  }
+
+  return `${month}/${year}`
 }
 
 function readError(err: unknown): string {
@@ -356,6 +368,47 @@ function readError(err: unknown): string {
             </button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-stone-200 bg-white">
+      <div class="border-b border-stone-200 px-4 py-3">
+        <h2 class="text-base font-semibold text-stone-950">Fixed spends</h2>
+        <p class="mt-1 text-sm text-stone-500">{{ selectedRangeLabel }}</p>
+      </div>
+      <div v-if="loading" class="px-4 py-12 text-center text-sm text-stone-500">Loading fixed spends...</div>
+      <div v-else-if="fixedSpends.length === 0" class="px-4 py-12 text-center text-sm text-stone-500">
+        No fixed spends found for this range.
+      </div>
+      <div v-else class="overflow-x-auto">
+        <table class="min-w-full table-fixed divide-y divide-stone-200 text-sm">
+          <colgroup>
+            <col class="w-full" />
+            <col class="w-20" />
+            <col class="w-28" />
+            <col class="w-28" />
+          </colgroup>
+          <thead class="bg-stone-50 text-left text-xs font-semibold uppercase text-stone-500">
+            <tr>
+              <th scope="col" class="px-4 py-3">Title</th>
+              <th scope="col" class="px-4 py-3">Months</th>
+              <th scope="col" class="px-4 py-3">Last month</th>
+              <th scope="col" class="px-4 py-3 text-right">Amount</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-stone-100 bg-white">
+            <tr v-for="item in fixedSpends" :key="item.title" class="hover:bg-stone-50">
+              <td class="max-w-0 px-4 py-3 font-medium text-stone-950">
+                <span class="block truncate">{{ item.title }}</span>
+              </td>
+              <td class="whitespace-nowrap px-4 py-3 text-stone-600">{{ item.monthCount }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-stone-600">{{ displayMonth(item.lastMonth) }}</td>
+              <td class="whitespace-nowrap px-4 py-3 text-right font-semibold text-stone-900">
+                {{ displayAmount(item.lastAmount) }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>

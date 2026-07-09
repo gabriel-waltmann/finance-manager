@@ -56,8 +56,16 @@ export interface DashboardTopItem {
   transactionCount: number
 }
 
+export interface DashboardFixedSpend {
+  title: string
+  monthCount: number
+  lastMonth: string
+  lastAmount: number
+}
+
 export interface GetDashboardResponse {
   topItems: DashboardTopItem[]
+  fixedSpends: DashboardFixedSpend[]
   totalAmount: number
   page: number
   limit: number
