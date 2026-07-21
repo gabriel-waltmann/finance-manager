@@ -1,5 +1,9 @@
 # Finance Manager documentation
 
+## Basic fundamentals
+
+- [How the system communicates](./basic-fundamentals/README.md): DNS, HTTP/HTTPS, firewalls, Nginx, the browser, the Vue frontend, the ASP.NET backend, and the complete local and production request flows.
+
 ## Feature implementation
 
 - [People](./features/people.md): person storage, CRUD endpoints, validation, soft deletion, and transaction assignment.
