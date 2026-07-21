@@ -1,5 +1,9 @@
 # Finance Manager
 
+### Documentation
+
+See the [documentation index](./docs/README.md) for the API implementation, people and transactions, asynchronous file processing, and live import status updates.
+
 ### Run the development server
 Define yours secrets. See [define-secrets.md](./docs/secrets/define-secrets.md)
 ```bash
