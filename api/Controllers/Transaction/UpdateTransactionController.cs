@@ -1,4 +1,5 @@
 using api.Requests.Transaction;
+using api.Requests.Common;
 using api.Services.Transaction;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +17,14 @@ public class UpdateTransactionController(
     private readonly TransactionService _service = service;
 
     [HttpPut]
-    public async Task<ActionResult> ExecuteAsync([FromRoute] string id, [FromBody] UpdateTransactionRequest dto)
+    public async Task<ActionResult> ExecuteAsync(
+        [FromRoute] RouteIdRequest route,
+        [FromBody] UpdateTransactionRequest dto
+    )
     {
         try
         {
-            await _service.Update(Guid.Parse(id), dto);
+            await _service.Update(route.Id, dto);
             
             return StatusCode(200);
         }

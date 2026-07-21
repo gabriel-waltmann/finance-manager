@@ -1,5 +1,6 @@
 using api.Exceptions;
 using api.Models.Person;
+using api.Requests.Common;
 using api.Services.Person;
 using Microsoft.AspNetCore.Mvc;
 
@@ -17,11 +18,11 @@ public class GetPersonController(
     private readonly PersonService _service = service;
 
     [HttpGet]
-    public async Task<ActionResult<PersonModel>> ExecuteAsync([FromRoute] string id)
+    public async Task<ActionResult<PersonModel>> ExecuteAsync([FromRoute] RouteIdRequest route)
     {
         try
         {
-            var person = await _service.Get(Guid.Parse(id));
+            var person = await _service.Get(route.Id);
 
             return StatusCode(200, person);
         }

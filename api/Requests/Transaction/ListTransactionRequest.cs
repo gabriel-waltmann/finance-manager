@@ -10,5 +10,5 @@ public class ListTransactionRequest
   public int Page { get; set; } = 1;
   public int Limit { get; set; } = 20;
   public string Order { get; set; } = "desc";
-  public string? WithDeleted { get; set; }
+  public bool WithDeleted { get; set; }
 }

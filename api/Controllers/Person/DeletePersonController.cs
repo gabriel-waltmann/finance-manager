@@ -1,4 +1,5 @@
 using api.Exceptions;
+using api.Requests.Common;
 using api.Services.Person;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,11 +17,11 @@ public class DeletePersonController(
     private readonly PersonService _service = service;
 
     [HttpDelete]
-    public async Task<ActionResult> ExecuteAsync([FromRoute] string id)
+    public async Task<ActionResult> ExecuteAsync([FromRoute] RouteIdRequest route)
     {
         try
         {
-            await _service.Delete(Guid.Parse(id));
+            await _service.Delete(route.Id);
 
             return StatusCode(200);
         }

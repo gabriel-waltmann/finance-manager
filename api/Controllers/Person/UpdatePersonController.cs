@@ -1,4 +1,5 @@
 using api.Exceptions;
+using api.Requests.Common;
 using api.Requests.Person;
 using api.Services.Person;
 using Microsoft.AspNetCore.Mvc;
@@ -17,11 +18,14 @@ public class UpdatePersonController(
     private readonly PersonService _service = service;
 
     [HttpPut]
-    public async Task<ActionResult> ExecuteAsync([FromRoute] string id, [FromBody] UpdatePersonRequest request)
+    public async Task<ActionResult> ExecuteAsync(
+        [FromRoute] RouteIdRequest route,
+        [FromBody] UpdatePersonRequest request
+    )
     {
         try
         {
-            await _service.Update(Guid.Parse(id), request);
+            await _service.Update(route.Id, request);
 
             return StatusCode(200);
         }

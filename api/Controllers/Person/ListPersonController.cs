@@ -1,4 +1,5 @@
 using api.Models.Person;
+using api.Requests.Common;
 using api.Responses.Person;
 using api.Services.Person;
 using Microsoft.AspNetCore.Mvc;
@@ -25,11 +26,13 @@ public class ListPersonController(
     }
 
     [HttpGet]
-    public async Task<ActionResult<ListPersonResponse>> ExecuteAsync([FromQuery] string? withDeleted)
+    public async Task<ActionResult<ListPersonResponse>> ExecuteAsync(
+        [FromQuery] WithDeletedRequest request
+    )
     {
         try
         {
-            var persons = await _service.List(withDeleted == "true");
+            var persons = await _service.List(request.WithDeleted);
 
             var response = MapResponse(persons);
 

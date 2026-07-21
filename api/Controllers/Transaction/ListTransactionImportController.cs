@@ -1,4 +1,3 @@
-using api.Models.FileProcessingStatus;
 using api.Requests.Transaction;
 using api.Responses.Transaction;
 using api.Services.FileProcessing;
@@ -24,32 +23,9 @@ public class ListTransactionImportController(
   {
     try
     {
-      if (request.Page < 1)
-      {
-        return BadRequest(new { error = "Page must be greater than or equal to 1." });
-      }
-
-      if (request.Limit < 1 || request.Limit > 100)
-      {
-        return BadRequest(new { error = "Limit must be between 1 and 100." });
-      }
-
       request.Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
       request.Status = string.IsNullOrWhiteSpace(request.Status) ? null : request.Status.Trim();
       request.Order = request.Order.Trim().ToLowerInvariant();
-
-      if (request.Order != "asc" && request.Order != "desc")
-      {
-        return BadRequest(new { error = "Order must be asc or desc." });
-      }
-
-      if (
-        request.Status is not null &&
-        !Enum.TryParse<FileProcessingStatusName>(request.Status, ignoreCase: true, out _)
-      )
-      {
-        return BadRequest(new { error = "Status must be Submitted, Processing, Finished, or Failed." });
-      }
 
       return Ok(await _service.List(request));
     }

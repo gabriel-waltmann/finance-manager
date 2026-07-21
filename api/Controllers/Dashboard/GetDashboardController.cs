@@ -23,31 +23,7 @@ public class GetDashboardController(
     {
         try
         {
-            if (request.Page < 1)
-            {
-                return BadRequest(new { error = "Page must be greater than or equal to 1." });
-            }
-
-            if (request.Limit < 1 || request.Limit > 100)
-            {
-                return BadRequest(new { error = "Limit must be between 1 and 100." });
-            }
-
             request.Order = request.Order.Trim().ToLowerInvariant();
-
-            if (request.Order != "asc" && request.Order != "desc")
-            {
-                return BadRequest(new { error = "Order must be asc or desc." });
-            }
-
-            if (
-                request.StartDate.HasValue &&
-                request.EndDate.HasValue &&
-                request.StartDate.Value.Date > request.EndDate.Value.Date
-            )
-            {
-                return BadRequest(new { error = "Start date must be before or equal to end date." });
-            }
 
             var response = await _service.Get(request);
 

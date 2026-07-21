@@ -11,6 +11,11 @@ using api.Settings;
 using api.Helpers.Database;
 using api.Exceptions.Database;
 using api.Models.Database;
+using api.Validators;
+using api.Validators.Common;
+using FluentValidation;
+using FluentValidation.AspNetCore;
+using Microsoft.AspNetCore.Mvc;
 using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +58,12 @@ builder.Services.AddHostedService<TransactionImportJob>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(o => o.CustomSchemaIds(type => type.ToString()));
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<ValidatorAssemblyMarker>();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = ValidationProblemDetailsFactory.Create;
+});
 builder.Services.AddControllers();
 
 var app = builder.Build();

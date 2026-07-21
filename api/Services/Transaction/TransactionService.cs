@@ -61,7 +61,7 @@ public class TransactionService(DatabaseContext context)
   // TODO: refactor to use one sql query 
   public async Task<ListTransactionResponse> ListWithTransactionPerson(ListTransactionRequest request)
   {
-    var withDeleted = request.WithDeleted == "true";
+    var withDeleted = request.WithDeleted;
     var query = _context.Transactions
       .Where(transaction => withDeleted || transaction.Deleted_at == null);
 

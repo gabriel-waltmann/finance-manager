@@ -28,17 +28,7 @@ public class UploadTransactionController(
     {
         try
         {
-            if (request.Category is null)
-            {
-                return BadRequest(new { error = "Category is required." });
-            }
-
-            if (!Enum.IsDefined(request.Category.Value))
-            {
-                return BadRequest(new { error = "Category must be CreditCard or Extrato." });
-            }
-
-            var file = await _fileService.CreateFromFormFileAsync(request.File, request.Category.Value);
+            var category = request.Category!.Value;            var file = await _fileService.CreateFromFormFileAsync(request.File, category);
             var jobId = Guid.NewGuid();
             var fileProcessing = await _fileProcessingService.CreateSubmitted(file.Id, jobId);
             var response = await _fileProcessingService.GetResponse(fileProcessing.Id);
