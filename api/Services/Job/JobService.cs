@@ -1,19 +1,36 @@
+using System.Text;
 using System.Text.Json;
 using api.Models.Job;
-using StackExchange.Redis;
+using RabbitMQ.Client;
 
 namespace api.Services.Job;
 
-public class JobService(IConnectionMultiplexer connectionMultiplexer)
+public class JobService(RabbitMqConnection rabbitMqConnection)
 {
-  public const string TransactionImportQueueKey = "jobs:transaction-import";
-
-  private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
-
-  public async Task QueueTransactionImport(TransactionImportJobPayload payload)
+  public async Task QueueTransactionImport(
+    TransactionImportJobPayload payload,
+    CancellationToken cancellationToken = default
+  )
   {
     var json = JsonSerializer.Serialize(payload);
+    var body = Encoding.UTF8.GetBytes(json);
+    var properties = new BasicProperties
+    {
+      ContentType = "application/json",
+      DeliveryMode = DeliveryModes.Persistent,
+      MessageId = payload.JobId.ToString(),
+      Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds())
+    };
 
-    await _redis.ListRightPushAsync(TransactionImportQueueKey, json);
+    await using var channel = await rabbitMqConnection.CreateChannelAsync(cancellationToken);
+
+    await channel.BasicPublishAsync(
+      exchange: string.Empty,
+      routingKey: rabbitMqConnection.TransactionImportQueueName,
+      mandatory: true,
+      basicProperties: properties,
+      body: body,
+      cancellationToken: cancellationToken
+    );
   }
 }

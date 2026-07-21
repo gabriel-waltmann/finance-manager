@@ -27,11 +27,17 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var redisSettingsSection = builder.Configuration.GetSection("Redis");
 var redisSettings = redisSettingsSection.Get<RedisSettings>()
   ?? throw new InvalidOperationException("Redis settings not found.");
-
 builder.Services.Configure<RedisSettings>(redisSettingsSection);
 builder.Services.AddSingleton<IConnectionMultiplexer>(
   ConnectionMultiplexer.Connect($"{redisSettings.Host}:{redisSettings.Port}")
 );
+
+// RabbitMQ
+var rabbitMqSettingsSection = builder.Configuration.GetSection("RabbitMq");
+_ = rabbitMqSettingsSection.Get<RabbitMqSettings>()
+  ?? throw new InvalidOperationException("RabbitMQ settings not found.");
+builder.Services.Configure<RabbitMqSettings>(rabbitMqSettingsSection);
+builder.Services.AddSingleton<RabbitMqConnection>();
 
 // Services
 builder.Services.AddScoped<TransactionService>();

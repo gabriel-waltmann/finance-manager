@@ -12,19 +12,20 @@ using api.Services.Transaction;
 using api.Services.TransactionImport;
 using CsvHelper;
 using Microsoft.EntityFrameworkCore;
-using StackExchange.Redis;
+using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 using DatabaseContext = api.Models.Database.DatabaseContext;
 
 namespace api.Services.Job;
 
 public class TransactionImportJob(
   IServiceScopeFactory serviceScopeFactory,
-  IConnectionMultiplexer connectionMultiplexer,
+  RabbitMqConnection rabbitMqConnection,
   ILogger<TransactionImportJob> logger
 ) : BackgroundService
 {
   private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
-  private readonly IDatabase _redis = connectionMultiplexer.GetDatabase();
+  private readonly RabbitMqConnection _rabbitMqConnection = rabbitMqConnection;
   private readonly ILogger<TransactionImportJob> _logger = logger;
   private static readonly string[] IgnoredImportTitleTexts =
   [
@@ -36,19 +37,80 @@ public class TransactionImportJob(
   {
     while (!stoppingToken.IsCancellationRequested)
     {
-      var job = await _redis.ListLeftPopAsync(JobService.TransactionImportQueueKey);
-
-      if (!job.HasValue)
+      try
       {
-        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-        continue;
-      }
+        await using var channel = await _rabbitMqConnection.CreateChannelAsync(stoppingToken);
 
-      await ProcessJob(job.ToString(), stoppingToken);
+        await channel.BasicQosAsync(
+          prefetchSize: 0,
+          prefetchCount: 1,
+          global: false,
+          cancellationToken: stoppingToken
+        );
+
+        var consumer = new AsyncEventingBasicConsumer(channel);
+
+        consumer.ReceivedAsync += async (_, eventArgs) =>
+        {
+          var json = Encoding.UTF8.GetString(eventArgs.Body.ToArray());
+
+          try
+          {
+            var succeeded = await ProcessJob(json, stoppingToken);
+
+            if (succeeded)
+            {
+              await channel.BasicAckAsync(eventArgs.DeliveryTag, multiple: false, cancellationToken: stoppingToken);
+              return;
+            }
+
+            await channel.BasicNackAsync(
+              eventArgs.DeliveryTag,
+              multiple: false,
+              requeue: false,
+              cancellationToken: stoppingToken
+            );
+          }
+          catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+          {
+            // Let RabbitMQ redeliver the unacknowledged message after the channel closes.
+          }
+          catch (Exception ex)
+          {
+            _logger.LogError(ex, "[TransactionImportJob] Failed to handle RabbitMQ delivery.");
+
+            await channel.BasicNackAsync(
+              eventArgs.DeliveryTag,
+              multiple: false,
+              requeue: false,
+              cancellationToken: CancellationToken.None
+            );
+          }
+        };
+
+        await channel.BasicConsumeAsync(
+          queue: _rabbitMqConnection.TransactionImportQueueName,
+          autoAck: false,
+          consumer: consumer,
+          cancellationToken: stoppingToken
+        );
+
+        await Task.Delay(Timeout.InfiniteTimeSpan, stoppingToken);
+      }
+      catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+      {
+        break;
+      }
+      catch (Exception ex)
+      {
+        _logger.LogError(ex, "[TransactionImportJob] RabbitMQ consumer stopped unexpectedly.");
+
+        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+      }
     }
   }
 
-  private async Task ProcessJob(string json, CancellationToken cancellationToken)
+  private async Task<bool> ProcessJob(string json, CancellationToken cancellationToken)
   {
     TransactionImportJobPayload? payload = null;
 
@@ -93,6 +155,12 @@ public class TransactionImportJob(
 
       await importTransaction.CommitAsync(cancellationToken);
       await fileProcessingService.MarkFinished(payload.FileProcessingId);
+
+      return true;
+    }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+    {
+      throw;
     }
     catch (Exception ex)
     {
@@ -102,6 +170,8 @@ public class TransactionImportJob(
       {
         await MarkFailed(payload.FileProcessingId);
       }
+
+      return false;
     }
   }
 
