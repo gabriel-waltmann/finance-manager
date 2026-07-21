@@ -4,11 +4,14 @@ import type {
   FileCategory,
   GetDashboardResponse,
   ListPersonResponse,
+  ListTransactionImportParams,
+  ListTransactionImportResponse,
   ListTransactionParams,
   ListTransactionResponse,
   Person,
   PersonPayload,
   Transaction,
+  TransactionImport,
   TransactionPayload,
   TransactionPerson,
   TransactionPersonPayload,
@@ -116,15 +119,72 @@ export async function deleteTransaction(id: string): Promise<void> {
   })
 }
 
-export async function uploadTransactions(file: File, category: FileCategory): Promise<void> {
+export async function uploadTransactions(file: File, category: FileCategory): Promise<TransactionImport> {
   const body = new FormData()
   body.append('File', file)
   body.append('Category', category)
 
-  await apiRequest<void>('/transaction/upload', {
+  return apiRequest<TransactionImport>('/transaction/upload', {
     method: 'POST',
     body,
   })
+}
+
+export async function listTransactionImports(
+  params: ListTransactionImportParams = {},
+): Promise<ListTransactionImportResponse> {
+  const query = new URLSearchParams()
+
+  if (params.search) {
+    query.set('search', params.search)
+  }
+
+  if (params.status) {
+    query.set('status', params.status)
+  }
+
+  if (params.page !== undefined) {
+    query.set('page', String(params.page))
+  }
+
+  if (params.limit !== undefined) {
+    query.set('limit', String(params.limit))
+  }
+
+  if (params.order) {
+    query.set('order', params.order)
+  }
+
+  const queryString = query.toString()
+  return apiRequest<ListTransactionImportResponse>(
+    queryString ? `/transaction-imports?${queryString}` : '/transaction-imports',
+  )
+}
+
+export interface TransactionImportEventHandlers {
+  onOpen: () => void
+  onError: () => void
+  onStatus: (transactionImport: TransactionImport) => void
+}
+
+export function openTransactionImportEventStream(
+  handlers: TransactionImportEventHandlers,
+): EventSource {
+  const source = new EventSource('/api/transaction-imports/events')
+
+  source.onopen = handlers.onOpen
+  source.onerror = handlers.onError
+  source.addEventListener('transaction-import-status', (event) => {
+    const message = event as MessageEvent<string>
+
+    try {
+      handlers.onStatus(JSON.parse(message.data) as TransactionImport)
+    } catch {
+      // A reconciliation fetch on connect remains the source of truth.
+    }
+  })
+
+  return source
 }
 
 export async function listPeople(): Promise<Person[]> {

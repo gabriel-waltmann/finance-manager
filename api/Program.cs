@@ -47,6 +47,7 @@ builder.Services.AddScoped<TransactionPersonService>();
 builder.Services.AddScoped<FileService>();
 builder.Services.AddScoped<FileProcessingService>();
 builder.Services.AddScoped<TransactionImportService>();
+builder.Services.AddSingleton<TransactionImportEventBroadcaster>();
 builder.Services.AddScoped<JobService>();
 builder.Services.AddHostedService<TransactionImportJob>();
 

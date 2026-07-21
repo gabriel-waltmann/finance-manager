@@ -20,6 +20,23 @@ export function displayDate(value: string): string {
   return `${day}/${month}/${year}`
 }
 
+export function displayDateTime(value: string | null): string {
+  if (!value) {
+    return '—'
+  }
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'short',
+    timeStyle: 'short',
+  }).format(date)
+}
+
 export function displayAmount(value: number): string {
   return new Intl.NumberFormat(undefined, {
     minimumFractionDigits: 2,

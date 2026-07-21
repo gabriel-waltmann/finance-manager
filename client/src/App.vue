@@ -6,6 +6,7 @@ import ToastHost from './components/ToastHost.vue'
 const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/transactions', label: 'Transactions' },
+  { to: '/imports', label: 'Imports' },
   { to: '/people', label: 'People' },
 ] as const
 </script>

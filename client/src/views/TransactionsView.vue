@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight, Edit3, FileUp, Plus, RefreshCw, Search, Trash2, X } from 'lucide-vue-next'
+import { ChevronLeft, ChevronRight, Edit3, Plus, RefreshCw, Search, Trash2, X } from 'lucide-vue-next'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ModalDialog from '../components/ModalDialog.vue'
 import {
@@ -12,12 +12,10 @@ import {
   listTransactions,
   updateAssignment,
   updateTransaction,
-  uploadTransactions,
 } from '../api/finance'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
 import { useToast } from '../stores/toast'
 import type {
-  FileCategory,
   ListTransactionResponse,
   ListTransactionParams,
   Person,
@@ -34,14 +32,11 @@ const pageSizeOptions = [10, 20, 50, 100]
 const loading = ref(true)
 const saving = ref(false)
 const deleting = ref(false)
-const uploadPending = ref(false)
 const error = ref('')
 const formOpen = ref(false)
 const editing = ref<TransactionWithPerson | null>(null)
 const deleteTarget = ref<TransactionWithPerson | null>(null)
-const fileInput = ref<HTMLInputElement | null>(null)
 const assignmentSaving = ref<Record<string, boolean>>({})
-const uploadCategory = ref<FileCategory>('CreditCard')
 
 const filters = reactive({
   search: '',
@@ -417,34 +412,6 @@ async function executeDelete() {
   }
 }
 
-function chooseFile() {
-  fileInput.value?.click()
-}
-
-async function uploadFile(event: Event) {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-
-  if (!file) {
-    return
-  }
-
-  uploadPending.value = true
-
-  try {
-    await uploadTransactions(file, uploadCategory.value)
-    toast.success('Import submitted')
-    window.setTimeout(() => {
-      void loadData()
-    }, 1200)
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    input.value = ''
-    uploadPending.value = false
-  }
-}
-
 function readError(err: unknown): string {
   return err instanceof Error ? err.message : 'Something went wrong'
 }
@@ -459,33 +426,6 @@ function readError(err: unknown): string {
       </div>
 
       <div class="flex flex-wrap gap-3">
-        <label class="block min-w-36">
-          <span class="sr-only">Category</span>
-          <select
-            v-model="uploadCategory"
-            class="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:bg-stone-100"
-            :disabled="uploadPending"
-          >
-            <option value="CreditCard">Credit card</option>
-            <option value="Extrato">Extrato</option>
-          </select>
-        </label>
-        <input
-          ref="fileInput"
-          class="hidden"
-          type="file"
-          accept=".csv,text/csv"
-          @change="uploadFile"
-        />
-        <button
-          type="button"
-          class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-          :disabled="uploadPending"
-          @click="chooseFile"
-        >
-          <FileUp class="size-4" aria-hidden="true" />
-          {{ uploadPending ? 'Uploading...' : 'Upload CSV' }}
-        </button>
         <button
           type="button"
           class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
