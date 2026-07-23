@@ -12,6 +12,7 @@
 
 ## Development guides
 
+- [Client data-access pattern](./client/data-access-pattern.md): entity, controller, TanStack Query, Vue view, and API middleware boundaries.
 - [API request validation](./api/request-validation.md)
 - [Create database migrations](./database/create-migrations.md)
 - [Install the Entity Framework CLI](./database/install-dotnet-ef.md)

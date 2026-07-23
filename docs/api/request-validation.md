@@ -69,5 +69,5 @@ Build both applications with:
 
 ```shell
 dotnet build api/api.csproj
-npm --prefix client run build
+pnpm --dir client run build
 ```

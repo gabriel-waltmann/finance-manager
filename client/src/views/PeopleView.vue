@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { Edit3, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ModalDialog from '../components/ModalDialog.vue'
-import { createPerson, deletePerson, listPeople, updatePerson } from '../api/finance'
+import {
+  useDeletePersonMutation,
+  usePeopleQuery,
+  useSavePersonMutation,
+} from '../queries/PersonQueries'
 import { useToast } from '../stores/toast'
-import type { Person, PersonPayload } from '../types'
+import type { PersonEntity, PersonPayload } from '../entities/PersonEntity.ts'
 
 const toast = useToast()
 
-const people = ref<Person[]>([])
-const loading = ref(true)
-const saving = ref(false)
-const deleting = ref(false)
-const error = ref('')
 const formOpen = ref(false)
-const editing = ref<Person | null>(null)
-const deleteTarget = ref<Person | null>(null)
+const editing = ref<PersonEntity | null>(null)
+const deleteTarget = ref<PersonEntity | null>(null)
 
 const form = reactive({
   name: '',
@@ -24,22 +23,45 @@ const form = reactive({
   phoneNumber: '',
 })
 
-onMounted(() => {
-  void loadPeople()
+const peopleQuery = usePeopleQuery()
+
+const savePersonMutation = useSavePersonMutation({
+  onSuccess: (variables) => {
+    toast.success(variables.id ? 'Person updated' : 'Person created')
+    formOpen.value = false
+  },
+  onError: (error) => {
+    toast.error(readError(error))
+  },
 })
 
-async function loadPeople() {
-  loading.value = true
-  error.value = ''
+const deletePersonMutation = useDeletePersonMutation({
+  onSuccess: () => {
+    toast.success('Person deleted')
+    deleteTarget.value = null
+  },
+  onError: (error) => {
+    toast.error(readError(error))
+  },
+})
 
-  try {
-    people.value = await listPeople()
-  } catch (err) {
-    error.value = readError(err)
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
+const people = computed(() => peopleQuery.data.value ?? [])
+const loading = computed(() => peopleQuery.isPending.value)
+const saving = computed(() => savePersonMutation.isPending.value)
+const deleting = computed(() => deletePersonMutation.isPending.value)
+const error = computed(() => readError(peopleQuery.error.value))
+
+watch(
+  () => peopleQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
+    }
+  },
+)
+
+function loadPeople() {
+  void peopleQuery.refetch()
 }
 
 function openCreateForm() {
@@ -50,7 +72,7 @@ function openCreateForm() {
   formOpen.value = true
 }
 
-function openEditForm(person: Person) {
+function openEditForm(person: PersonEntity) {
   editing.value = person
   form.name = person.name
   form.email = person.email
@@ -64,57 +86,36 @@ function closeForm() {
   }
 }
 
-async function submitForm() {
+function submitForm() {
   const payload: PersonPayload = {
     name: form.name.trim(),
     email: form.email.trim(),
     phoneNumber: form.phoneNumber.trim(),
   }
 
-  saving.value = true
-
-  try {
-    if (editing.value) {
-      await updatePerson(editing.value.id, payload)
-      toast.success('Person updated')
-    } else {
-      await createPerson(payload)
-      toast.success('Person created')
-    }
-
-    formOpen.value = false
-    await loadPeople()
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    saving.value = false
-  }
+  savePersonMutation.mutate({
+    id: editing.value?.id,
+    payload,
+  })
 }
 
-function confirmDelete(person: Person) {
+function confirmDelete(person: PersonEntity) {
   deleteTarget.value = person
 }
 
-async function executeDelete() {
+function executeDelete() {
   if (!deleteTarget.value) {
     return
   }
 
-  deleting.value = true
-
-  try {
-    await deletePerson(deleteTarget.value.id)
-    toast.success('Person deleted')
-    deleteTarget.value = null
-    await loadPeople()
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    deleting.value = false
-  }
+  deletePersonMutation.mutate(deleteTarget.value.id)
 }
 
 function readError(err: unknown): string {
+  if (!err) {
+    return ''
+  }
+
   return err instanceof Error ? err.message : 'Something went wrong'
 }
 </script>

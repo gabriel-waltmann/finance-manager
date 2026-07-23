@@ -1,22 +1,19 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-vue-next'
 import HorizontalBarChart from '../components/HorizontalBarChart.vue'
-import { getDashboard, listPeople } from '../api/finance'
 import { displayAmount, displayDate } from '../lib/format'
+import { useDashboardQuery } from '../queries/DashboardQueries'
+import { usePeopleQuery } from '../queries/PersonQueries'
 import { useToast } from '../stores/toast'
-import type { DashboardFixedSpend, DashboardTopItem, GetDashboardResponse, Person } from '../types'
+import type { DashboardParams } from '../entities/Dashboard'
 
 const toast = useToast()
 
 const defaultRange = getPreviousMonthRange()
-const topItems = ref<DashboardTopItem[]>([])
-const fixedSpends = ref<DashboardFixedSpend[]>([])
-const dashboardTotalAmount = ref(0)
-const people = ref<Person[]>([])
 const pageSizeOptions = [10, 20, 50, 100]
-const loading = ref(true)
-const error = ref('')
+const page = ref(1)
+const limit = ref(20)
 
 const filters = reactive({
   startDate: defaultRange.startDate,
@@ -25,12 +22,32 @@ const filters = reactive({
   order: 'desc' as 'asc' | 'desc',
 })
 
-const pagination = reactive({
-  page: 1,
-  limit: 20,
-  total: 0,
-  totalPages: 0,
-})
+const dashboardParams = computed<DashboardParams>(() => ({
+  startDate: filters.startDate || undefined,
+  endDate: filters.endDate || undefined,
+  personId: filters.personId || undefined,
+  page: page.value,
+  limit: limit.value,
+  order: filters.order,
+}))
+
+const dashboardQuery = useDashboardQuery(dashboardParams)
+const peopleQuery = usePeopleQuery()
+
+const topItems = computed(() => dashboardQuery.data.value?.topItems ?? [])
+const fixedSpends = computed(() => dashboardQuery.data.value?.fixedSpends ?? [])
+const dashboardTotalAmount = computed(() => dashboardQuery.data.value?.totalAmount ?? 0)
+const people = computed(() => peopleQuery.data.value ?? [])
+const loading = computed(() => dashboardQuery.isPending.value)
+const refreshing = computed(() => dashboardQuery.isFetching.value)
+const error = computed(() => readError(dashboardQuery.error.value ?? peopleQuery.error.value))
+
+const pagination = computed(() => ({
+  page: dashboardQuery.data.value?.page ?? page.value,
+  limit: dashboardQuery.data.value?.limit ?? limit.value,
+  total: dashboardQuery.data.value?.total ?? 0,
+  totalPages: dashboardQuery.data.value?.totalPages ?? 0,
+}))
 
 const chartItems = computed(() =>
   topItems.value.map((item) => ({
@@ -47,23 +64,23 @@ const totalTransactions = computed(() =>
   topItems.value.reduce((total, item) => total + item.transactionCount, 0),
 )
 
-const visibleTotalPages = computed(() => Math.max(pagination.totalPages, 1))
-const hasPreviousPage = computed(() => pagination.page > 1)
-const hasNextPage = computed(() => pagination.page < pagination.totalPages)
+const visibleTotalPages = computed(() => Math.max(pagination.value.totalPages, 1))
+const hasPreviousPage = computed(() => pagination.value.page > 1)
+const hasNextPage = computed(() => pagination.value.page < pagination.value.totalPages)
 
 const pageRange = computed(() => {
-  if (pagination.total === 0) {
+  if (pagination.value.total === 0) {
     return '0 of 0'
   }
 
   if (topItems.value.length === 0) {
-    return `0 of ${pagination.total}`
+    return `0 of ${pagination.value.total}`
   }
 
-  const start = (pagination.page - 1) * pagination.limit + 1
-  const end = Math.min(start + topItems.value.length - 1, pagination.total)
+  const start = (pagination.value.page - 1) * pagination.value.limit + 1
+  const end = Math.min(start + topItems.value.length - 1, pagination.value.total)
 
-  return `${start}-${end} of ${pagination.total}`
+  return `${start}-${end} of ${pagination.value.total}`
 })
 
 const selectedRangeLabel = computed(() => {
@@ -82,99 +99,50 @@ const selectedRangeLabel = computed(() => {
   return 'All dates'
 })
 
-onMounted(() => {
-  void loadData()
-})
-
-async function loadData() {
-  loading.value = true
-  error.value = ''
-
-  try {
-    const [dashboard, personRows] = await Promise.all([
-      getDashboard(buildDashboardParams()),
-      listPeople(),
-    ])
-
-    applyDashboardResponse(dashboard)
-    people.value = personRows
-
+watch(
+  () => dashboardQuery.data.value,
+  (dashboard) => {
     if (
+      dashboard &&
       dashboard.topItems.length === 0 &&
       dashboard.total > 0 &&
-      pagination.page > dashboard.totalPages
+      page.value > dashboard.totalPages
     ) {
-      pagination.page = dashboard.totalPages
-      const adjustedDashboard = await getDashboard(buildDashboardParams())
-
-      applyDashboardResponse(adjustedDashboard)
+      page.value = dashboard.totalPages
     }
-  } catch (err) {
-    error.value = readError(err)
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
-}
+  },
+)
 
-async function loadDashboard() {
-  loading.value = true
-  error.value = ''
-
-  try {
-    const dashboard = await getDashboard(buildDashboardParams())
-
-    applyDashboardResponse(dashboard)
-
-    if (
-      dashboard.topItems.length === 0 &&
-      dashboard.total > 0 &&
-      pagination.page > dashboard.totalPages
-    ) {
-      pagination.page = dashboard.totalPages
-      const adjustedDashboard = await getDashboard(buildDashboardParams())
-
-      applyDashboardResponse(adjustedDashboard)
+watch(
+  () => dashboardQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
     }
-  } catch (err) {
-    error.value = readError(err)
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
-}
+  },
+)
 
-function applyDashboardResponse(response: GetDashboardResponse) {
-  topItems.value = response.topItems
-  fixedSpends.value = response.fixedSpends
-  dashboardTotalAmount.value = response.totalAmount
-  pagination.page = response.page
-  pagination.limit = response.limit
-  pagination.total = response.total
-  pagination.totalPages = response.totalPages
-}
+watch(
+  () => peopleQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
+    }
+  },
+)
 
-function buildDashboardParams() {
-  return {
-    startDate: filters.startDate || undefined,
-    endDate: filters.endDate || undefined,
-    personId: filters.personId || undefined,
-    page: pagination.page,
-    limit: pagination.limit,
-    order: filters.order,
-  }
+function loadDashboard() {
+  void dashboardQuery.refetch()
 }
 
 function applyFilters() {
-  pagination.page = 1
-  void loadDashboard()
+  page.value = 1
 }
 
 function changeLimit(event: Event) {
   const select = event.target as HTMLSelectElement
-  pagination.limit = Number(select.value)
-  pagination.page = 1
-  void loadDashboard()
+  limit.value = Number(select.value)
+  page.value = 1
 }
 
 function goToPreviousPage() {
@@ -182,8 +150,7 @@ function goToPreviousPage() {
     return
   }
 
-  pagination.page -= 1
-  void loadDashboard()
+  page.value -= 1
 }
 
 function goToNextPage() {
@@ -191,8 +158,7 @@ function goToNextPage() {
     return
   }
 
-  pagination.page += 1
-  void loadDashboard()
+  page.value += 1
 }
 
 function getPreviousMonthRange() {
@@ -223,6 +189,10 @@ function displayMonth(value: string): string {
 }
 
 function readError(err: unknown): string {
+  if (!err) {
+    return ''
+  }
+
   return err instanceof Error ? err.message : 'Something went wrong'
 }
 </script>
@@ -238,7 +208,7 @@ function readError(err: unknown): string {
       <button
         type="button"
         class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-60"
-        :disabled="loading"
+        :disabled="refreshing"
         @click="loadDashboard"
       >
         <RefreshCw class="size-4" aria-hidden="true" />

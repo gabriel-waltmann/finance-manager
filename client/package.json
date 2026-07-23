@@ -2,6 +2,7 @@
   "name": "client",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@11.15.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tanstack/vue-query": "^5.101.4",
+    "axios": "^1.18.1",
     "lucide-vue-next": "^1.0.0",
     "vue": "^3.5.39",
     "vue-router": "^5.1.0"

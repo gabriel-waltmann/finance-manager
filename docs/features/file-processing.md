@@ -116,12 +116,12 @@ The endpoint sends a comment heartbeat about every 15 seconds when no status eve
 
 The `/imports` Vue view uses both HTTP and SSE so the database remains the source of truth:
 
-1. On mount, it fetches the current page with `GET /transaction-imports` and opens an `EventSource` for `/api/transaction-imports/events`.
-2. When the stream opens, the connection indicator changes to **Live updates** and the view performs another list fetch. This recovers changes that happened before the SSE subscription was ready.
-3. For each `transaction-import-status` event, the client immediately replaces a matching visible row by ID.
-4. It schedules a list reconciliation 150 ms later. The fetch adds newly submitted rows when they belong on the current page and reapplies search, status, ordering, and pagination rules.
+1. On mount, its TanStack query fetches the current page with `GET /transaction-imports` and the view opens an `EventSource` for `/api/transaction-imports/events`.
+2. When the stream opens, the connection indicator changes to **Live updates** and the view invalidates the import cache. The resulting refetch recovers changes that happened before the SSE subscription was ready.
+3. For each `transaction-import-status` event, the client immediately replaces matching rows across cached import pages by ID.
+4. It schedules a cache invalidation 150 ms later. The reconciliation refetch adds newly submitted rows when they belong on the current page and reapplies search, status, ordering, and pagination rules.
 5. When the stream errors, the indicator changes to **Reconnecting**. The browser's `EventSource` reconnects automatically, using the server's retry hint; a successful reconnect performs another reconciliation fetch.
-6. After a successful upload, the client returns to page one and refreshes the list even if the earlier `Submitted` event was missed.
+6. After a successful upload, the client returns to page one and invalidates the import cache even if the earlier `Submitted` event was missed.
 7. On component unmount, the client closes the event stream and clears pending timers.
 
 Malformed SSE JSON is ignored because the next reconciliation fetch restores authoritative state. The view also provides a manual **Refresh** action.
@@ -136,5 +136,5 @@ The broadcaster is in-memory and process-local. With multiple API instances, an 
 - Processing state: `api/Models/FileProcessing` and `api/Services/FileProcessing`
 - RabbitMQ publisher and worker: `api/Services/Job`
 - Import provenance: `api/Models/TransactionImport` and `api/Services/TransactionImport`
-- Client API and status stream: `client/src/api/finance.ts`
+- Client API and status stream: `client/src/controllers/TransactionController.ts` and `client/src/queries/TransactionImportQueries.ts`
 - Client imports view: `client/src/views/ImportsView.vue`

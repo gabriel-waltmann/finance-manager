@@ -151,7 +151,7 @@ Using one public origin for both the frontend and API also avoids a cross-origin
 
 The frontend is a Vue 3 application built with Vite. The browser first downloads its HTML, JavaScript, CSS, images, and fonts. It then executes the JavaScript locally.
 
-The API wrapper in `client/src/api/http.ts` uses the relative base path `/api`. Because it is relative, the browser sends requests back to the same scheme, host, and port that served the page. The proxy decides how to reach the backend.
+The Axios client in `client/src/api/http.ts` uses the relative base path `/api`, while TanStack Query owns the resulting server-state cache and request lifecycle. Because the base path is relative, the browser sends requests back to the same scheme, host, and port that served the page. The proxy decides how to reach the backend.
 
 Typical communication looks like this:
 
@@ -236,7 +236,7 @@ The exact responsibilities are:
 
 1. `docker compose up -d` starts PostgreSQL, Redis, and RabbitMQ.
 2. `dotnet run` starts the API. The HTTP development profile listens on `http://localhost:5266`; the HTTPS profile also uses `https://localhost:7026`.
-3. `npm run dev` in `client` starts Vite, normally on `http://localhost:5173`.
+3. `pnpm run dev` in `client` starts Vite, normally on `http://localhost:5173`.
 4. The browser downloads the Vue application from Vite.
 5. Frontend calls to `/api/*` return to Vite.
 6. `client/vite.config.ts` proxies them to `http://localhost:5266` by default and removes `/api`.
@@ -259,8 +259,10 @@ This separation is important: the frontend owns presentation, the backend owns v
 
 ## Code and configuration map
 
-- Frontend HTTP wrapper: `client/src/api/http.ts`
-- Frontend API functions and SSE connection: `client/src/api/finance.ts`
+- Frontend Axios client: `client/src/api/http.ts`
+- Frontend TanStack Query modules and client: `client/src/queries` and `client/src/lib/queryClient.ts`
+- Frontend API controllers: `client/src/controllers`
+- Frontend data-access architecture: `docs/client/data-access-pattern.md`
 - Local development proxy: `client/vite.config.ts`
 - Backend startup and service connections: `api/Program.cs`
 - Backend routes: `api/Controllers`

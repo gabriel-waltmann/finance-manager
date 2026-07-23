@@ -1,30 +1,29 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, FileUp, RefreshCw, Search, X } from 'lucide-vue-next'
-import {
-  listTransactionImports,
-  openTransactionImportEventStream,
-  uploadTransactions,
-} from '../api/finance'
 import { displayDateTime } from '../lib/format'
+import {
+  openTransactionImportEventStream,
+  useTransactionImportCache,
+  useTransactionImportsQuery,
+  useUploadTransactionMutation,
+} from '../queries/TransactionImportQueries'
 import { useToast } from '../stores/toast'
 import type {
   FileCategory,
   FileProcessingStatus,
   ListTransactionImportParams,
-  ListTransactionImportResponse,
-  TransactionImport,
-} from '../types'
+  TransactionImportEntity,
+} from '../entities/TransactionImportEntity'
 
 const toast = useToast()
-const imports = ref<TransactionImport[]>([])
-const loading = ref(true)
-const uploadPending = ref(false)
-const error = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
 const uploadCategory = ref<FileCategory>('CreditCard')
 const connectionState = ref<'connecting' | 'live' | 'reconnecting'>('connecting')
 const pageSizeOptions = [10, 20, 50, 100]
+const page = ref(1)
+const limit = ref(20)
+const debouncedSearch = ref('')
 
 const filters = reactive({
   search: '',
@@ -32,42 +31,68 @@ const filters = reactive({
   order: 'desc' as 'asc' | 'desc',
 })
 
-const pagination = reactive({
-  page: 1,
-  limit: 20,
-  total: 0,
-  totalPages: 0,
-})
-
 let eventSource: EventSource | undefined
 let searchDebounce: ReturnType<typeof window.setTimeout> | undefined
 let reconcileDebounce: ReturnType<typeof window.setTimeout> | undefined
-let loadSequence = 0
 
-const visibleTotalPages = computed(() => Math.max(pagination.totalPages, 1))
-const hasPreviousPage = computed(() => pagination.page > 1)
-const hasNextPage = computed(() => pagination.page < pagination.totalPages)
+const importParams = computed<ListTransactionImportParams>(() => ({
+  search: debouncedSearch.value || undefined,
+  status: filters.status || undefined,
+  page: page.value,
+  limit: limit.value,
+  order: filters.order,
+}))
+
+const importsQuery = useTransactionImportsQuery(importParams)
+const importCache = useTransactionImportCache()
+
+const uploadMutation = useUploadTransactionMutation({
+  onSuccess: () => {
+    toast.success('Import submitted')
+    page.value = 1
+  },
+  onError: (error) => {
+    toast.error(readError(error))
+  },
+  onSettled: (variables) => {
+    variables.input.value = ''
+  },
+})
+
+const imports = computed(() => importsQuery.data.value?.imports ?? [])
+const loading = computed(() => importsQuery.isPending.value)
+const uploadPending = computed(() => uploadMutation.isPending.value)
+const error = computed(() => readError(importsQuery.error.value))
+const pagination = computed(() => ({
+  page: importsQuery.data.value?.page ?? page.value,
+  limit: importsQuery.data.value?.limit ?? limit.value,
+  total: importsQuery.data.value?.total ?? 0,
+  totalPages: importsQuery.data.value?.totalPages ?? 0,
+}))
+
+const visibleTotalPages = computed(() => Math.max(pagination.value.totalPages, 1))
+const hasPreviousPage = computed(() => pagination.value.page > 1)
+const hasNextPage = computed(() => pagination.value.page < pagination.value.totalPages)
 
 const pageRange = computed(() => {
-  if (pagination.total === 0) {
+  if (pagination.value.total === 0) {
     return '0 of 0'
   }
 
   if (imports.value.length === 0) {
-    return `0 of ${pagination.total}`
+    return `0 of ${pagination.value.total}`
   }
 
-  const start = (pagination.page - 1) * pagination.limit + 1
-  const end = Math.min(start + imports.value.length - 1, pagination.total)
-  return `${start}-${end} of ${pagination.total}`
+  const start = (pagination.value.page - 1) * pagination.value.limit + 1
+  const end = Math.min(start + imports.value.length - 1, pagination.value.total)
+  return `${start}-${end} of ${pagination.value.total}`
 })
 
 onMounted(() => {
-  void loadImports()
   eventSource = openTransactionImportEventStream({
     onOpen: () => {
       connectionState.value = 'live'
-      void loadImports(false)
+      void importCache.invalidate()
     },
     onError: () => {
       connectionState.value = 'reconnecting'
@@ -90,91 +115,49 @@ watch(
   () => {
     clearSearchDebounce()
     searchDebounce = window.setTimeout(() => {
-      pagination.page = 1
-      void loadImports()
+      page.value = 1
+      debouncedSearch.value = filters.search.trim()
     }, 300)
   },
   { flush: 'sync' },
 )
 
-async function loadImports(showLoading = true) {
-  const sequence = ++loadSequence
-
-  if (showLoading) {
-    loading.value = true
-  }
-
-  error.value = ''
-
-  try {
-    const response = await listTransactionImports(buildListParams())
-
-    if (sequence !== loadSequence) {
-      return
-    }
-
-    applyResponse(response)
-
+watch(
+  () => importsQuery.data.value,
+  (response) => {
     if (
+      response &&
       response.imports.length === 0 &&
       response.total > 0 &&
-      pagination.page > response.totalPages
+      page.value > response.totalPages
     ) {
-      pagination.page = response.totalPages
-      const adjustedResponse = await listTransactionImports(buildListParams())
-
-      if (sequence !== loadSequence) {
-        return
-      }
-
-      applyResponse(adjustedResponse)
+      page.value = response.totalPages
     }
-  } catch (err) {
-    if (sequence !== loadSequence) {
-      return
-    }
+  },
+)
 
-    error.value = readError(err)
+watch(
+  () => importsQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
+    }
+  },
+)
 
-    if (showLoading) {
-      toast.error(error.value)
-    }
-  } finally {
-    if (sequence === loadSequence) {
-      loading.value = false
-    }
-  }
+function loadImports() {
+  void importsQuery.refetch()
 }
 
-function applyResponse(response: ListTransactionImportResponse) {
-  imports.value = response.imports
-  pagination.page = response.page
-  pagination.limit = response.limit
-  pagination.total = response.total
-  pagination.totalPages = response.totalPages
-}
-
-function buildListParams(): ListTransactionImportParams {
-  return {
-    search: filters.search.trim() || undefined,
-    status: filters.status || undefined,
-    page: pagination.page,
-    limit: pagination.limit,
-    order: filters.order,
-  }
-}
-
-function applyStatusUpdate(transactionImport: TransactionImport) {
-  imports.value = imports.value.map((item) =>
-    item.id === transactionImport.id ? transactionImport : item,
-  )
+function applyStatusUpdate(transactionImport: TransactionImportEntity) {
+  importCache.update(transactionImport)
 
   if (reconcileDebounce !== undefined) {
     window.clearTimeout(reconcileDebounce)
   }
 
   reconcileDebounce = window.setTimeout(() => {
-    void loadImports(false)
+    void importCache.invalidate()
   }, 150)
 }
 
@@ -192,38 +175,33 @@ function clearSearch() {
 
   filters.search = ''
   clearSearchDebounce()
-  pagination.page = 1
-  void loadImports()
+  page.value = 1
+  debouncedSearch.value = ''
 }
 
 function applyStatusFilter() {
-  pagination.page = 1
-  void loadImports()
+  page.value = 1
 }
 
 function changeLimit(event: Event) {
-  pagination.limit = Number((event.target as HTMLSelectElement).value)
-  pagination.page = 1
-  void loadImports()
+  limit.value = Number((event.target as HTMLSelectElement).value)
+  page.value = 1
 }
 
 function changeOrder(event: Event) {
   filters.order = (event.target as HTMLSelectElement).value === 'asc' ? 'asc' : 'desc'
-  pagination.page = 1
-  void loadImports()
+  page.value = 1
 }
 
 function goToPreviousPage() {
   if (hasPreviousPage.value) {
-    pagination.page -= 1
-    void loadImports()
+    page.value -= 1
   }
 }
 
 function goToNextPage() {
   if (hasNextPage.value) {
-    pagination.page += 1
-    void loadImports()
+    page.value += 1
   }
 }
 
@@ -231,7 +209,7 @@ function chooseFile() {
   fileInput.value?.click()
 }
 
-async function uploadFile(event: Event) {
+function uploadFile(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
 
@@ -239,19 +217,11 @@ async function uploadFile(event: Event) {
     return
   }
 
-  uploadPending.value = true
-
-  try {
-    await uploadTransactions(file, uploadCategory.value)
-    toast.success('Import submitted')
-    pagination.page = 1
-    await loadImports(false)
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    input.value = ''
-    uploadPending.value = false
-  }
+  uploadMutation.mutate({
+    file,
+    category: uploadCategory.value,
+    input,
+  })
 }
 
 function displayCategory(category: FileCategory): string {
@@ -272,6 +242,10 @@ function statusClasses(status: FileProcessingStatus): string {
 }
 
 function readError(err: unknown): string {
+  if (!err) {
+    return ''
+  }
+
   return err instanceof Error ? err.message : 'Something went wrong'
 }
 </script>

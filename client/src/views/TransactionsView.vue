@@ -1,42 +1,33 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, Edit3, Plus, RefreshCw, Search, Trash2, X } from 'lucide-vue-next'
 import ConfirmDialog from '../components/ConfirmDialog.vue'
 import ModalDialog from '../components/ModalDialog.vue'
-import {
-  createAssignment,
-  createTransaction,
-  deleteAssignment,
-  deleteTransaction,
-  listPeople,
-  listTransactions,
-  updateAssignment,
-  updateTransaction,
-} from '../api/finance'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
+import { usePeopleQuery } from '../queries/PersonQueries'
+import {
+  useAssignmentMutation,
+  useDeleteTransactionMutation,
+  usePendingAssignmentIds,
+  useSaveTransactionMutation,
+  useTransactionsQuery,
+} from '../queries/TransactionQueries'
 import { useToast } from '../stores/toast'
 import type {
-  ListTransactionResponse,
   ListTransactionParams,
-  Person,
   TransactionPayload,
-  TransactionPerson,
   TransactionWithPerson,
-} from '../types'
+} from '../entities/TransactionEntity.ts'
 
 const toast = useToast()
 
-const transactions = ref<TransactionWithPerson[]>([])
-const people = ref<Person[]>([])
 const pageSizeOptions = [10, 20, 50, 100]
-const loading = ref(true)
-const saving = ref(false)
-const deleting = ref(false)
-const error = ref('')
 const formOpen = ref(false)
 const editing = ref<TransactionWithPerson | null>(null)
 const deleteTarget = ref<TransactionWithPerson | null>(null)
-const assignmentSaving = ref<Record<string, boolean>>({})
+const page = ref(1)
+const limit = ref(20)
+const debouncedSearch = ref('')
 
 const filters = reactive({
   search: '',
@@ -44,13 +35,6 @@ const filters = reactive({
   endDate: '',
   personFilter: '',
   order: 'desc' as 'asc' | 'desc',
-})
-
-const pagination = reactive({
-  page: 1,
-  limit: 20,
-  total: 0,
-  totalPages: 0,
 })
 
 const form = reactive({
@@ -62,6 +46,33 @@ const form = reactive({
 
 let searchDebounce: ReturnType<typeof window.setTimeout> | undefined
 
+const transactionParams = computed<ListTransactionParams>(() => ({
+  search: debouncedSearch.value || undefined,
+  startDate: filters.startDate || undefined,
+  endDate: filters.endDate || undefined,
+  personId: filters.personFilter && filters.personFilter !== 'unassigned'
+    ? filters.personFilter
+    : undefined,
+  unassigned: filters.personFilter === 'unassigned' ? true : undefined,
+  page: page.value,
+  limit: limit.value,
+  order: filters.order,
+}))
+
+const { query: transactionQuery, queryKey: transactionQueryKey } = useTransactionsQuery(transactionParams)
+const peopleQuery = usePeopleQuery()
+
+const transactions = computed(() => transactionQuery.data.value?.transactions ?? [])
+const people = computed(() => peopleQuery.data.value ?? [])
+const loading = computed(() => transactionQuery.isPending.value || peopleQuery.isPending.value)
+const error = computed(() => readError(transactionQuery.error.value ?? peopleQuery.error.value))
+const pagination = computed(() => ({
+  page: transactionQuery.data.value?.page ?? page.value,
+  limit: transactionQuery.data.value?.limit ?? limit.value,
+  total: transactionQuery.data.value?.total ?? 0,
+  totalPages: transactionQuery.data.value?.totalPages ?? 0,
+}))
+
 const assignedCount = computed(
   () => transactions.value.filter((item) => item.transactionPerson !== null).length,
 )
@@ -70,28 +81,62 @@ const totalAmount = computed(() =>
   transactions.value.reduce((total, item) => total + Number(item.transaction.amount), 0),
 )
 
-const visibleTotalPages = computed(() => Math.max(pagination.totalPages, 1))
-const hasPreviousPage = computed(() => pagination.page > 1)
-const hasNextPage = computed(() => pagination.page < pagination.totalPages)
+const visibleTotalPages = computed(() => Math.max(pagination.value.totalPages, 1))
+const hasPreviousPage = computed(() => pagination.value.page > 1)
+const hasNextPage = computed(() => pagination.value.page < pagination.value.totalPages)
 
 const pageRange = computed(() => {
-  if (pagination.total === 0) {
+  if (pagination.value.total === 0) {
     return '0 of 0'
   }
 
   if (transactions.value.length === 0) {
-    return `0 of ${pagination.total}`
+    return `0 of ${pagination.value.total}`
   }
 
-  const start = (pagination.page - 1) * pagination.limit + 1
-  const end = Math.min(start + transactions.value.length - 1, pagination.total)
+  const start = (pagination.value.page - 1) * pagination.value.limit + 1
+  const end = Math.min(start + transactions.value.length - 1, pagination.value.total)
 
-  return `${start}-${end} of ${pagination.total}`
+  return `${start}-${end} of ${pagination.value.total}`
 })
 
-onMounted(() => {
-  void loadData()
+const saveTransactionMutation = useSaveTransactionMutation({
+  onSuccess: (variables) => {
+    toast.success(variables.editing ? 'Transaction updated' : 'Transaction created')
+    formOpen.value = false
+  },
+  onError: (error) => {
+    toast.error(readError(error))
+  },
 })
+
+const assignmentMutation = useAssignmentMutation(people, transactionQueryKey, {
+  onSuccess: (variables) => {
+    toast.success(variables.nextPersonId ? 'Person assigned' : 'Assignment cleared')
+  },
+  onError: (error, variables) => {
+    variables.select.value = variables.previousPersonId
+    toast.error(readError(error))
+  },
+})
+
+const pendingAssignmentIds = usePendingAssignmentIds()
+
+const deleteTransactionMutation = useDeleteTransactionMutation(transactionQueryKey, page, {
+  onSuccess: () => {
+    toast.success('Transaction deleted')
+    deleteTarget.value = null
+  },
+  onError: (error) => {
+    toast.error(readError(error))
+  },
+})
+
+const saving = computed(() => saveTransactionMutation.isPending.value)
+const deleting = computed(() => deleteTransactionMutation.isPending.value)
+const assignmentSaving = computed<Record<string, boolean>>(() => Object.fromEntries(
+  pendingAssignmentIds.value.map((transactionId) => [transactionId, true]),
+))
 
 onBeforeUnmount(() => {
   clearSearchDebounce()
@@ -103,65 +148,50 @@ watch(
     clearSearchDebounce()
 
     searchDebounce = window.setTimeout(() => {
-      pagination.page = 1
-      void loadData()
+      page.value = 1
+      debouncedSearch.value = filters.search.trim()
     }, 300)
   },
   { flush: 'sync' },
 )
 
-async function loadData() {
-  loading.value = true
-  error.value = ''
-
-  try {
-    const [transactionResponse, personRows] = await Promise.all([
-      listTransactions(buildListTransactionParams()),
-      listPeople(),
-    ])
-
-    applyTransactionResponse(transactionResponse)
-    people.value = personRows
-
+watch(
+  () => transactionQuery.data.value,
+  (response) => {
     if (
-      transactionResponse.transactions.length === 0 &&
-      transactionResponse.total > 0 &&
-      pagination.page > transactionResponse.totalPages
+      response &&
+      response.transactions.length === 0 &&
+      response.total > 0 &&
+      page.value > response.totalPages
     ) {
-      pagination.page = transactionResponse.totalPages
-      const adjustedResponse = await listTransactions(buildListTransactionParams())
-
-      applyTransactionResponse(adjustedResponse)
+      page.value = response.totalPages
     }
-  } catch (err) {
-    error.value = readError(err)
-    toast.error(error.value)
-  } finally {
-    loading.value = false
-  }
-}
+  },
+)
 
-function applyTransactionResponse(response: ListTransactionResponse) {
-  transactions.value = response.transactions
-  pagination.page = response.page
-  pagination.limit = response.limit
-  pagination.total = response.total
-  pagination.totalPages = response.totalPages
-}
+watch(
+  () => transactionQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
+    }
+  },
+)
 
-function buildListTransactionParams(): ListTransactionParams {
-  return {
-    search: filters.search.trim() || undefined,
-    startDate: filters.startDate || undefined,
-    endDate: filters.endDate || undefined,
-    personId: filters.personFilter && filters.personFilter !== 'unassigned'
-      ? filters.personFilter
-      : undefined,
-    unassigned: filters.personFilter === 'unassigned' ? true : undefined,
-    page: pagination.page,
-    limit: pagination.limit,
-    order: filters.order,
-  }
+watch(
+  () => peopleQuery.error.value,
+  (queryError) => {
+    if (queryError) {
+      toast.error(readError(queryError))
+    }
+  },
+)
+
+function loadData() {
+  void Promise.all([
+    transactionQuery.refetch(),
+    peopleQuery.refetch(),
+  ])
 }
 
 function clearSearchDebounce() {
@@ -178,32 +208,28 @@ function clearSearch() {
 
   filters.search = ''
   clearSearchDebounce()
-  pagination.page = 1
-  void loadData()
+  page.value = 1
+  debouncedSearch.value = ''
 }
 
 function applyDateFilter() {
-  pagination.page = 1
-  void loadData()
+  page.value = 1
 }
 
 function applyPersonFilter() {
-  pagination.page = 1
-  void loadData()
+  page.value = 1
 }
 
 function changeLimit(event: Event) {
   const select = event.target as HTMLSelectElement
-  pagination.limit = Number(select.value)
-  pagination.page = 1
-  void loadData()
+  limit.value = Number(select.value)
+  page.value = 1
 }
 
 function changeOrder(event: Event) {
   const select = event.target as HTMLSelectElement
   filters.order = select.value === 'asc' ? 'asc' : 'desc'
-  pagination.page = 1
-  void loadData()
+  page.value = 1
 }
 
 function goToPreviousPage() {
@@ -211,8 +237,7 @@ function goToPreviousPage() {
     return
   }
 
-  pagination.page -= 1
-  void loadData()
+  page.value -= 1
 }
 
 function goToNextPage() {
@@ -220,8 +245,7 @@ function goToNextPage() {
     return
   }
 
-  pagination.page += 1
-  void loadData()
+  page.value += 1
 }
 
 function openCreateForm() {
@@ -248,43 +272,21 @@ function closeForm() {
   }
 }
 
-async function submitForm() {
+function submitForm() {
   const payload: TransactionPayload = {
     date: form.date,
     title: form.title.trim(),
     amount: Number(form.amount),
   }
 
-  saving.value = true
-
-  try {
-    if (editing.value) {
-      await updateTransaction(editing.value.transaction.id, payload)
-      await persistAssignment(editing.value, form.personId)
-      toast.success('Transaction updated')
-    } else {
-      const transaction = await createTransaction(payload)
-
-      if (form.personId) {
-        await createAssignment({
-          personId: form.personId,
-          transactionId: transaction.id,
-        })
-      }
-
-      toast.success('Transaction created')
-    }
-
-    formOpen.value = false
-    await loadData()
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    saving.value = false
-  }
+  saveTransactionMutation.mutate({
+    editing: editing.value,
+    payload,
+    personId: form.personId,
+  })
 }
 
-async function changeAssignment(item: TransactionWithPerson, event: Event) {
+function changeAssignment(item: TransactionWithPerson, event: Event) {
   const select = event.target as HTMLSelectElement
   const previousPersonId = item.person?.id ?? ''
   const nextPersonId = select.value
@@ -293,126 +295,26 @@ async function changeAssignment(item: TransactionWithPerson, event: Event) {
     return
   }
 
-  setAssignmentBusy(item.transaction.id, true)
-
-  try {
-    const transactionPerson = await persistAssignment(item, nextPersonId)
-    updateTransactionAssignment(item.transaction.id, transactionPerson)
-    toast.success(nextPersonId ? 'Person assigned' : 'Assignment cleared')
-  } catch (err) {
-    select.value = previousPersonId
-    toast.error(readError(err))
-  } finally {
-    setAssignmentBusy(item.transaction.id, false)
-  }
-}
-
-async function persistAssignment(
-  item: TransactionWithPerson,
-  nextPersonId: string,
-): Promise<TransactionPerson | null> {
-  const transactionId = item.transaction.id
-  const currentAssignment = item.transactionPerson
-  const currentPersonId = item.person?.id ?? ''
-
-  if (currentPersonId === nextPersonId) {
-    return currentAssignment
-  }
-
-  if (!nextPersonId && currentAssignment) {
-    await deleteAssignment(currentAssignment.id)
-    return null
-  }
-
-  if (nextPersonId && currentAssignment) {
-    await updateAssignment(currentAssignment.id, {
-      personId: nextPersonId,
-      transactionId,
-    })
-
-    return {
-      ...currentAssignment,
-      personId: nextPersonId,
-      transactionId,
-      updated_at: new Date().toISOString(),
-    }
-  }
-
-  if (nextPersonId) {
-    return await createAssignment({
-      personId: nextPersonId,
-      transactionId,
-    })
-  }
-
-  return null
-}
-
-function updateTransactionAssignment(transactionId: string, transactionPerson: TransactionPerson | null) {
-  const person = transactionPerson
-    ? people.value.find((item) => item.id === transactionPerson.personId) ?? null
-    : null
-
-  transactions.value = transactions.value.map((item) =>
-    item.transaction.id === transactionId
-      ? {
-          ...item,
-          transactionPerson,
-          person,
-        }
-      : item,
-  )
-}
-
-function setAssignmentBusy(transactionId: string, busy: boolean) {
-  const next = { ...assignmentSaving.value }
-
-  if (busy) {
-    next[transactionId] = true
-  } else {
-    delete next[transactionId]
-  }
-
-  assignmentSaving.value = next
+  assignmentMutation.mutate({ item, nextPersonId, previousPersonId, select })
 }
 
 function confirmDelete(item: TransactionWithPerson) {
   deleteTarget.value = item
 }
 
-function removeTransactionFromView(transactionId: string) {
-  transactions.value = transactions.value.filter((item) => item.transaction.id !== transactionId)
-  pagination.total = Math.max(pagination.total - 1, 0)
-  pagination.totalPages = pagination.total === 0 ? 0 : Math.ceil(pagination.total / pagination.limit)
-
-  if (pagination.total === 0) {
-    pagination.page = 1
-  } else if (pagination.page > pagination.totalPages) {
-    pagination.page = pagination.totalPages
-  }
-}
-
-async function executeDelete() {
+function executeDelete() {
   if (!deleteTarget.value) {
     return
   }
 
-  const transactionId = deleteTarget.value.transaction.id
-  deleting.value = true
-
-  try {
-    await deleteTransaction(transactionId)
-    removeTransactionFromView(transactionId)
-    toast.success('Transaction deleted')
-    deleteTarget.value = null
-  } catch (err) {
-    toast.error(readError(err))
-  } finally {
-    deleting.value = false
-  }
+  deleteTransactionMutation.mutate(deleteTarget.value.transaction.id)
 }
 
 function readError(err: unknown): string {
+  if (!err) {
+    return ''
+  }
+
   return err instanceof Error ? err.message : 'Something went wrong'
 }
 </script>
