@@ -14,7 +14,7 @@ import type {
   DataTableRow,
 } from '../../components/tables/types'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../../lib/format'
-import { usePeopleQuery } from '../../queries/PersonQueries'
+import { usePersonOptionsQuery } from '../../queries/PersonQueries'
 import {
   useAssignmentMutation,
   useDeleteTransactionMutation,
@@ -78,17 +78,17 @@ export function useController() {
   const { query: transactionQuery, queryKey: transactionQueryKey } = useTransactionsQuery(
     transactionParams,
   )
-  const peopleQuery = usePeopleQuery()
+  const personOptionsQuery = usePersonOptionsQuery()
 
   const pages = computed(() => transactionQuery.data.value?.pages ?? [])
   const transactions = computed(() => pages.value.flatMap((page) => page.transactions))
   const firstPage = computed(() => pages.value[0])
-  const people = computed(() => peopleQuery.data.value ?? [])
+  const persons = computed(() => personOptionsQuery.data.value ?? [])
   const loading = computed(() => transactionQuery.isPending.value)
   const loadingMore = computed(() => transactionQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => transactionQuery.isFetchNextPageError.value)
   const transactionError = computed(() => readError(transactionQuery.error.value))
-  const peopleError = computed(() => readError(peopleQuery.error.value))
+  const personError = computed(() => readError(personOptionsQuery.error.value))
   const totalRows = computed(() => firstPage.value?.total ?? 0)
 
   const hasNextPage = computed(() => transactionQuery.hasNextPage.value)
@@ -107,7 +107,7 @@ export function useController() {
     },
   })
 
-  const assignmentMutation = useAssignmentMutation(people, transactionQueryKey, {
+  const assignmentMutation = useAssignmentMutation(persons, transactionQueryKey, {
     onSuccess: (variables) => {
       toast.success(variables.nextPersonId ? 'Person assigned' : 'Assignment cleared')
     },
@@ -157,7 +157,7 @@ export function useController() {
           component: TransactionPersonCell,
           props: {
             disabled: Boolean(assignmentSaving.value[item.transaction.id]),
-            people: people.value,
+            persons: persons.value,
             personId: item.person?.id ?? '',
             onChange: (event: Event) => changeAssignment(item, event),
           },
@@ -235,7 +235,7 @@ export function useController() {
   )
 
   watch(
-    () => peopleQuery.error.value,
+    () => personOptionsQuery.error.value,
     (queryError) => {
       if (queryError) {
         toast.error(readError(queryError))
@@ -265,7 +265,7 @@ export function useController() {
   function loadData() {
     void Promise.all([
       transactionQuery.refetch(),
-      peopleQuery.refetch(),
+      personOptionsQuery.refetch(),
     ])
   }
 
@@ -372,8 +372,8 @@ export function useController() {
     loading,
     loadingMore,
     openCreateForm,
-    people,
-    peopleError,
+    personError,
+    persons,
     saving,
     setLoadMoreTarget,
     submitForm,

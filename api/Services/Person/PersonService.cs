@@ -2,6 +2,7 @@ using api.Exceptions;
 using api.Models.Database;
 using api.Models.Person;
 using api.Requests.Person;
+using api.Responses.Person;
 using Microsoft.EntityFrameworkCore;
 
 namespace api.Services.Person;
@@ -30,11 +31,59 @@ public class PersonService(DatabaseContext context)
     ) ?? throw new NotFoundPersonException();
   }
 
-  public async Task<List<PersonModel>> List(bool withDeleted)
+  public async Task<ListPersonResponse> List(ListPersonRequest request)
   {
-    return await _context.Persons
-      .Where(person => withDeleted || person.Deleted_at == null)
-      .ToListAsync();
+    var query = _context.Persons
+      .Where(person => request.WithDeleted || person.Deleted_at == null);
+
+    if (!string.IsNullOrWhiteSpace(request.Search))
+    {
+      var searchPattern = $"%{EscapeLikePattern(request.Search)}%";
+
+      query = query.Where(person =>
+        EF.Functions.ILike(person.Name, searchPattern, "\\") ||
+        EF.Functions.ILike(person.Email, searchPattern, "\\") ||
+        EF.Functions.ILike(person.PhoneNumber, searchPattern, "\\")
+      );
+    }
+
+    var total = await query.CountAsync();
+    var orderedQuery = request.Order == "desc"
+      ? query
+        .OrderByDescending(person => person.Name)
+        .ThenByDescending(person => person.Id)
+      : query
+        .OrderBy(person => person.Name)
+        .ThenBy(person => person.Id);
+
+    if (request.Page.HasValue && request.Limit.HasValue)
+    {
+      var page = request.Page.Value;
+      var limit = request.Limit.Value;
+      var totalPages = total == 0 ? 0 : (int)Math.Ceiling(total / (double)limit);
+      var persons = await orderedQuery
+        .Skip((page - 1) * limit)
+        .Take(limit)
+        .ToListAsync();
+
+      return new ListPersonResponse
+      {
+        Persons = persons,
+        Page = page,
+        Limit = limit,
+        Total = total,
+        TotalPages = totalPages
+      };
+    }
+
+    return new ListPersonResponse
+    {
+      Persons = await orderedQuery.ToListAsync(),
+      Page = 1,
+      Limit = total,
+      Total = total,
+      TotalPages = total == 0 ? 0 : 1
+    };
   }
 
   public async Task<PersonModel> Create(CreatePersonRequest dto)
@@ -99,5 +148,13 @@ public class PersonService(DatabaseContext context)
     person.Deleted_at = DateTime.UtcNow;
 
     await _context.SaveChangesAsync();
+  }
+
+  private static string EscapeLikePattern(string value)
+  {
+    return value
+      .Replace("\\", "\\\\", StringComparison.Ordinal)
+      .Replace("%", "\\%", StringComparison.Ordinal)
+      .Replace("_", "\\_", StringComparison.Ordinal);
   }
 }

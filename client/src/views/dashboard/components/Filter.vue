@@ -5,7 +5,7 @@ import SelectInput from '../../../components/inputs/SelectInput.vue'
 import type { PersonEntity } from '../../../entities/PersonEntity'
 
 const props = defineProps<{
-  people: PersonEntity[]
+  persons: PersonEntity[]
 }>()
 
 const startDate = defineModel<string>('startDate', { required: true })
@@ -14,8 +14,8 @@ const personId = defineModel<string>('personId', { required: true })
 const order = defineModel<'asc' | 'desc'>('order', { required: true })
 
 const personOptions = computed(() => [
-  { label: 'All people', value: '' },
-  ...props.people.map((person) => ({
+  { label: 'Any person', value: '' },
+  ...props.persons.map((person) => ({
     label: person.name,
     value: person.id,
   })),

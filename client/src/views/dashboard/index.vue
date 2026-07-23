@@ -15,7 +15,7 @@ const {
   loadProgress,
   loading,
   loadingMore,
-  people,
+  persons,
   setLoadMoreTarget,
   tableHeaders,
   tableRows,
@@ -32,7 +32,7 @@ const {
       v-model:end-date="filters.endDate"
       v-model:person-id="filters.personId"
       v-model:order="filters.order"
-      :people="people"
+      :persons="persons"
     />
 
     <ErrorAlert v-if="error" :message="error" />

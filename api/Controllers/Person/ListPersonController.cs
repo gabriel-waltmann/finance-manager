@@ -1,5 +1,4 @@
-using api.Models.Person;
-using api.Requests.Common;
+using api.Requests.Person;
 using api.Responses.Person;
 using api.Services.Person;
 using Microsoft.AspNetCore.Mvc;
@@ -17,24 +16,19 @@ public class ListPersonController(
     private readonly ILogger<ListPersonController> _logger = logger;
     private readonly PersonService _service = service;
 
-    public static ListPersonResponse MapResponse(List<PersonModel> persons)
-    {
-        return new ListPersonResponse
-        {
-            Persons = persons
-        };
-    }
-
     [HttpGet]
     public async Task<ActionResult<ListPersonResponse>> ExecuteAsync(
-        [FromQuery] WithDeletedRequest request
+        [FromQuery] ListPersonRequest request
     )
     {
         try
         {
-            var persons = await _service.List(request.WithDeleted);
+            request.Search = string.IsNullOrWhiteSpace(request.Search)
+                ? null
+                : request.Search.Trim();
+            request.Order = request.Order.Trim().ToLowerInvariant();
 
-            var response = MapResponse(persons);
+            var response = await _service.List(request);
 
             return StatusCode(200, response);
         }

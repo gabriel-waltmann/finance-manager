@@ -216,6 +216,6 @@ Before finishing a client data-access change, verify that:
 - Entity contracts: `client/src/entities/PersonEntity.ts`
 - Controller: `client/src/controllers/PersonController.ts`
 - Queries and mutations: `client/src/queries/PersonQueries.ts`
-- Vue consumer: `client/src/views/PeopleView.vue`
+- Vue consumer: `client/src/views/person/index.vue`
 - Query-key factory: `client/src/queries/queryKeys.ts`
 - API middleware: `client/src/api/middlewares/errorMiddleware.ts`

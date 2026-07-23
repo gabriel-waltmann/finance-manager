@@ -1,13 +1,21 @@
 import type {
   ListPersonResponse,
+  ListPersonParams,
   PersonEntity,
   PersonPayload,
 } from '../entities/PersonEntity'
 import { apiRequest } from '../api/http'
 
 export class PersonController {
-  static async list(signal?: AbortSignal): Promise<PersonEntity[]> {
-    const response = await apiRequest<ListPersonResponse>('/persons', { signal })
+  static list(
+    params: ListPersonParams = {},
+    signal?: AbortSignal,
+  ): Promise<ListPersonResponse> {
+    return apiRequest<ListPersonResponse>('/persons', { params, signal })
+  }
+
+  static async listOptions(signal?: AbortSignal): Promise<PersonEntity[]> {
+    const response = await PersonController.list({ order: 'asc' }, signal)
     return response.persons
   }
 

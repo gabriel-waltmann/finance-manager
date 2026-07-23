@@ -18,7 +18,7 @@ import {
   useDashboardQuery,
   type DashboardQueryParams,
 } from '../../queries/DashboardQueries'
-import { usePeopleQuery } from '../../queries/PersonQueries'
+import { usePersonOptionsQuery } from '../../queries/PersonQueries'
 import { useToast } from '../../stores/toast'
 
 const tableHeaders: DataTableHeader[] = [
@@ -48,18 +48,20 @@ export function useController() {
   }))
 
   const dashboardQuery = useDashboardQuery(dashboardParams)
-  const peopleQuery = usePeopleQuery()
+  const personOptionsQuery = usePersonOptionsQuery()
 
   const pages = computed(() => dashboardQuery.data.value?.pages ?? [])
   const topItems = computed(() => pages.value.flatMap((page) => page.topItems))
   const firstPage = computed(() => pages.value[0])
   const totalSpend = computed(() => firstPage.value?.totalAmount ?? 0)
   const totalItems = computed(() => firstPage.value?.total ?? 0)
-  const people = computed(() => peopleQuery.data.value ?? [])
+  const persons = computed(() => personOptionsQuery.data.value ?? [])
   const loading = computed(() => dashboardQuery.isPending.value)
   const loadingMore = computed(() => dashboardQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => dashboardQuery.isFetchNextPageError.value)
-  const error = computed(() => readError(dashboardQuery.error.value ?? peopleQuery.error.value))
+  const error = computed(() => readError(
+    dashboardQuery.error.value ?? personOptionsQuery.error.value,
+  ))
 
   const tableRows = computed<DataTableRow[]>(() =>
     topItems.value.map((item) => ({
@@ -158,7 +160,7 @@ export function useController() {
   )
 
   watch(
-    () => peopleQuery.error.value,
+    () => personOptionsQuery.error.value,
     (queryError) => {
       if (queryError) {
         toast.error(readError(queryError))
@@ -186,7 +188,7 @@ export function useController() {
     loadProgress,
     loading,
     loadingMore,
-    people,
+    persons,
     setLoadMoreTarget,
     tableHeaders,
     tableRows,

@@ -1,6 +1,6 @@
-# People implementation
+# Person implementation
 
-People represent the individuals who can be assigned to transactions. The implementation is split across the person controllers, `PersonService`, request validators, and the `persons` database table.
+A person represents an individual who can be assigned to transactions. The implementation is split across the person controllers, `PersonService`, request validators, and the `persons` database table.
 
 ## Data model
 
@@ -24,7 +24,7 @@ Email comparison and storage currently use the values supplied by the client; th
 
 | Method | Route | Behavior |
 | --- | --- | --- |
-| `GET` | `/persons?withDeleted=false` | Lists people. Soft-deleted rows are excluded unless `withDeleted=true`. |
+| `GET` | `/persons?search=&order=asc&page=1&limit=20&withDeleted=false` | Lists persons with optional search, ordering, and paired pagination. Soft-deleted rows are excluded unless `withDeleted=true`. |
 | `GET` | `/person/{id}` | Gets one active person or returns `404`. |
 | `POST` | `/person` | Creates a person and returns the model with `201`. An active duplicate email returns `409`. |
 | `PUT` | `/person/{id}` | Updates an active person. A missing person returns `404`, and an active duplicate email returns `409`. |
@@ -42,9 +42,11 @@ Create and update requests use the same body shape:
 
 Request validation requires a nonblank name of at most 120 characters, a valid nonblank email of at most 254 characters, and a nonblank phone number of at most 32 characters. Invalid requests use the API's standard `400 application/problem+json` response described in [API request validation](../api/request-validation.md).
 
+The list endpoint searches name, email, and phone number case-insensitively. `order` accepts `asc` or `desc`; `page` and `limit` must be supplied together, and `limit` is capped at 100. Omitting pagination returns all matching active persons for assignment selectors. Every list response includes `persons`, `page`, `limit`, `total`, and `totalPages`.
+
 ## Transaction assignment
 
-People and transactions are connected by `TransactionPersonModel`, stored in `transactions_person`. The assignment API is separate from the person API:
+A person and a transaction are connected by `TransactionPersonModel`, stored in `transactions_person`. The assignment API is separate from the person API:
 
 - `POST /transaction-person` creates an assignment from `personId` and `transactionId`.
 - `PUT /transaction-person/{id}` changes an assignment.

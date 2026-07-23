@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import ErrorAlert from '../../components/alerts/ErrorAlert.vue'
 import FilledButton from '../../components/buttons/FilledButton.vue'
 import ConfirmDialog from '../../components/dialogs/ConfirmDialog.vue'
 import ViewHeader from '../../components/headers/ViewHeader.vue'
 import DataTable from '../../components/tables/DataTable.vue'
-import TransactionFilter from './components/TransactionFilter.vue'
-import TransactionFormDialog from './components/TransactionFormDialog.vue'
+import PersonFilter from './components/PersonFilter.vue'
+import PersonFormDialog from './components/PersonFormDialog.vue'
 import { useController } from './useController'
 
 const {
@@ -14,6 +13,7 @@ const {
   deleteTarget,
   deleting,
   editing,
+  error,
   executeDelete,
   filters,
   form,
@@ -26,44 +26,35 @@ const {
   loading,
   loadingMore,
   openCreateForm,
-  personError,
-  persons,
   saving,
   setLoadMoreTarget,
   submitForm,
   tableHeaders,
   tableRows,
-  transactionError,
 } = useController()
 </script>
 
 <template>
   <section class="space-y-5">
-    <ViewHeader title="Transactions">
+    <ViewHeader title="Person">
       <template #actions>
-        <FilledButton text="New transaction" @click="openCreateForm" />
+        <FilledButton text="New person" @click="openCreateForm" />
       </template>
     </ViewHeader>
 
-    <TransactionFilter
+    <PersonFilter
       v-model:search="filters.search"
-      v-model:start-date="filters.startDate"
-      v-model:end-date="filters.endDate"
-      v-model:person-filter="filters.personFilter"
       v-model:order="filters.order"
-      :persons="persons"
     />
-
-    <ErrorAlert v-if="personError" :message="personError" />
 
     <DataTable
       :headers="tableHeaders"
       :rows="tableRows"
-      :error="transactionError"
+      :error="error"
       :loading="loading"
-      loading-label="Loading transactions..."
-      empty-label="No transactions found."
-      retry-label="Retry loading transactions"
+      loading-label="Loading person..."
+      empty-label="No person found."
+      retry-label="Retry loading person"
       :retry="loadData"
       :has-next-page="hasNextPage"
       :load-more-failed="loadMoreFailed"
@@ -74,14 +65,12 @@ const {
     />
   </section>
 
-  <TransactionFormDialog
-    v-model:date="form.date"
-    v-model:title="form.title"
-    v-model:amount="form.amount"
-    v-model:person-id="form.personId"
+  <PersonFormDialog
+    v-model:name="form.name"
+    v-model:email="form.email"
+    v-model:phone-number="form.phoneNumber"
     :editing="editing !== null"
     :open="formOpen"
-    :persons="persons"
     :saving="saving"
     @close="closeForm"
     @submit="submitForm"
@@ -89,8 +78,8 @@ const {
 
   <ConfirmDialog
     :open="deleteTarget !== null"
-    title="Delete transaction"
-    message="This transaction will be marked as deleted."
+    title="Delete person"
+    message="This person will be marked as deleted."
     :busy="deleting"
     @cancel="cancelDelete"
     @confirm="executeDelete"

@@ -106,7 +106,7 @@ export function useSaveTransactionMutation(options: SaveTransactionMutationOptio
 }
 
 export function useAssignmentMutation(
-  people: ComputedRef<PersonEntity[]>,
+  persons: ComputedRef<PersonEntity[]>,
   transactionQueryKey: ComputedRef<TransactionQueryKey>,
   options: AssignmentMutationOptions = {},
 ) {
@@ -121,7 +121,7 @@ export function useAssignmentMutation(
       updateTransactionAssignment(
         queryClient,
         transactionQueryKey.value,
-        people.value,
+        persons.value,
         variables.item.transaction.id,
         transactionPerson,
       )
@@ -213,12 +213,12 @@ async function persistAssignment(
 function updateTransactionAssignment(
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: TransactionQueryKey,
-  people: PersonEntity[],
+  persons: PersonEntity[],
   transactionId: string,
   transactionPerson: TransactionPersonEntity | null,
 ) {
   const person = transactionPerson
-    ? people.find((item) => item.id === transactionPerson.personId) ?? null
+    ? persons.find((item) => item.id === transactionPerson.personId) ?? null
     : null
 
   queryClient.setQueryData<InfiniteData<ListTransactionResponse>>(queryKey, (response) => (

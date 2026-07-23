@@ -6,7 +6,7 @@ import TextInput from '../../../components/inputs/TextInput.vue'
 import type { PersonEntity } from '../../../entities/PersonEntity'
 
 const props = defineProps<{
-  people: PersonEntity[]
+  persons: PersonEntity[]
 }>()
 
 const search = defineModel<string>('search', { required: true })
@@ -16,9 +16,9 @@ const personFilter = defineModel<string>('personFilter', { required: true })
 const order = defineModel<'asc' | 'desc'>('order', { required: true })
 
 const personOptions = computed(() => [
-  { label: 'All people', value: '' },
+  { label: 'Any person', value: '' },
   { label: 'Unassigned', value: 'unassigned' },
-  ...props.people.map((person) => ({
+  ...props.persons.map((person) => ({
     label: person.name,
     value: person.id,
   })),

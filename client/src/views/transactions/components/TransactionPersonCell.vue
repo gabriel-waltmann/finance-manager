@@ -5,13 +5,13 @@ import type { PersonEntity } from '../../../entities/PersonEntity'
 
 const props = defineProps<{
   disabled: boolean
-  people: PersonEntity[]
+  persons: PersonEntity[]
   personId: string
 }>()
 
 const personOptions = computed(() => [
   { label: 'Unassigned', value: '' },
-  ...props.people.map((person) => ({
+  ...props.persons.map((person) => ({
     label: person.name,
     value: person.id,
   })),

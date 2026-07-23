@@ -11,7 +11,7 @@ import type { PersonEntity } from '../../../entities/PersonEntity'
 const props = defineProps<{
   editing: boolean
   open: boolean
-  people: PersonEntity[]
+  persons: PersonEntity[]
   saving: boolean
 }>()
 
@@ -22,7 +22,7 @@ const personId = defineModel<string>('personId', { required: true })
 
 const personOptions = computed(() => [
   { label: 'Unassigned', value: '' },
-  ...props.people.map((person) => ({
+  ...props.persons.map((person) => ({
     label: person.name,
     value: person.id,
   })),

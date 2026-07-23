@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/dashboard/index.vue'
 import TransactionsView from '../views/transactions/index.vue'
-import PeopleView from '../views/PeopleView.vue'
+import PersonView from '../views/person/index.vue'
 import ImportsView from '../views/imports/index.vue'
 
 const router = createRouter({
@@ -18,9 +18,9 @@ const router = createRouter({
       component: TransactionsView,
     },
     {
-      path: '/people',
-      name: 'people',
-      component: PeopleView,
+      path: '/person',
+      name: 'person',
+      component: PersonView,
     },
     {
       path: '/imports',

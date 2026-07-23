@@ -1,7 +1,12 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, type ComputedRef } from 'vue'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
 import { PersonController } from '../controllers/PersonController'
-import type { PersonPayload } from '../entities/PersonEntity'
+import type { ListPersonParams, PersonPayload } from '../entities/PersonEntity'
 import { financeKeys } from './queryKeys'
+
+export type PersonQueryParams = Omit<ListPersonParams, 'limit' | 'page'>
+
+export const PERSON_PAGE_SIZE = 20
 
 export interface SavePersonVariables {
   id?: string
@@ -18,11 +23,32 @@ interface DeletePersonMutationOptions {
   onError?: (error: Error) => void
 }
 
-export function usePeopleQuery() {
+export function usePersonOptionsQuery() {
   return useQuery({
-    queryKey: financeKeys.people(),
-    queryFn: ({ signal }) => PersonController.list(signal),
+    queryKey: financeKeys.personOptions(),
+    queryFn: ({ signal }) => PersonController.listOptions(signal),
   })
+}
+
+export function usePersonsQuery(params: ComputedRef<PersonQueryParams>) {
+  const queryKey = computed(() => financeKeys.personList({
+    ...params.value,
+    limit: PERSON_PAGE_SIZE,
+  }))
+  const query = useInfiniteQuery({
+    queryKey,
+    queryFn: ({ pageParam, signal }) => PersonController.list({
+      ...params.value,
+      page: pageParam,
+      limit: PERSON_PAGE_SIZE,
+    }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined
+    ),
+  })
+
+  return { query, queryKey }
 }
 
 export function useSavePersonMutation(options: SavePersonMutationOptions = {}) {
@@ -44,7 +70,7 @@ export function useSavePersonMutation(options: SavePersonMutationOptions = {}) {
     },
     onSettled: async (_result, _error, variables) => {
       const invalidations = [
-        queryClient.invalidateQueries({ queryKey: financeKeys.people() }),
+        queryClient.invalidateQueries({ queryKey: financeKeys.person() }),
       ]
 
       if (variables.id) {
@@ -72,7 +98,7 @@ export function useDeletePersonMutation(options: DeletePersonMutationOptions = {
     },
     onSettled: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: financeKeys.people() }),
+        queryClient.invalidateQueries({ queryKey: financeKeys.person() }),
         queryClient.invalidateQueries({ queryKey: financeKeys.transactions() }),
         queryClient.invalidateQueries({ queryKey: financeKeys.dashboards() }),
       ])
