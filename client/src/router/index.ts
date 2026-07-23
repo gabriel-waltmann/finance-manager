@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import DashboardView from '../views/DashboardView.vue'
+import DashboardView from '../views/dashboard/index.vue'
 import TransactionsView from '../views/TransactionsView.vue'
 import PeopleView from '../views/PeopleView.vue'
 import ImportsView from '../views/ImportsView.vue'

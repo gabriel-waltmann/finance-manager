@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Landmark } from 'lucide-vue-next'
 import { RouterLink, RouterView } from 'vue-router'
-import ToastHost from './components/ToastHost.vue'
+import ToastHost from './components/toasts/HostToast.vue'
 
 const navItems = [
   { to: '/', label: 'Dashboard' },

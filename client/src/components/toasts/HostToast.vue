@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { CheckCircle2, X, XCircle } from 'lucide-vue-next'
-import { useToast } from '../stores/toast'
+import { useToast } from '../../stores/toast'
 
 const toast = useToast()
 const messages = computed(() => toast.messages.value)

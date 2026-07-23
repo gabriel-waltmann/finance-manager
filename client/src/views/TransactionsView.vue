@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { ChevronLeft, ChevronRight, Edit3, Plus, RefreshCw, Search, Trash2, X } from 'lucide-vue-next'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
-import ModalDialog from '../components/ModalDialog.vue'
+import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
+import ModalDialog from '../components/dialogs/ModalDialog.vue'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../lib/format'
 import { usePeopleQuery } from '../queries/PersonQueries'
 import {

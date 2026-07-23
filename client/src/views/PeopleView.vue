@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import { Edit3, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
-import ConfirmDialog from '../components/ConfirmDialog.vue'
-import ModalDialog from '../components/ModalDialog.vue'
+import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
+import ModalDialog from '../components/dialogs/ModalDialog.vue'
 import {
   useDeletePersonMutation,
   usePeopleQuery,
