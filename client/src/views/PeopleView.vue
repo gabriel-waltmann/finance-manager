@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { Edit3, Plus, RefreshCw, Trash2 } from 'lucide-vue-next'
 import ConfirmDialog from '../components/dialogs/ConfirmDialog.vue'
 import ModalDialog from '../components/dialogs/ModalDialog.vue'
 import {
@@ -134,7 +133,6 @@ function readError(err: unknown): string {
           class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           @click="loadPeople"
         >
-          <RefreshCw class="size-4" aria-hidden="true" />
           Refresh
         </button>
         <button
@@ -142,7 +140,6 @@ function readError(err: unknown): string {
           class="inline-flex items-center gap-2 rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           @click="openCreateForm"
         >
-          <Plus class="size-4" aria-hidden="true" />
           New person
         </button>
       </div>
@@ -164,7 +161,7 @@ function readError(err: unknown): string {
               <th class="min-w-56 px-4 py-3 font-semibold">Name</th>
               <th class="min-w-64 px-4 py-3 font-semibold">Email</th>
               <th class="min-w-44 px-4 py-3 font-semibold">Phone</th>
-              <th class="w-28 px-4 py-3 text-right font-semibold">Actions</th>
+              <th class="w-40 px-4 py-3 text-right font-semibold">Actions</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-stone-100">
@@ -176,21 +173,17 @@ function readError(err: unknown): string {
                 <div class="flex justify-end gap-2">
                   <button
                     type="button"
-                    class="inline-flex size-8 items-center justify-center rounded-md text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                    title="Edit person"
+                    class="rounded-md px-3 py-2 text-sm font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     @click="openEditForm(person)"
                   >
-                    <Edit3 class="size-4" aria-hidden="true" />
-                    <span class="sr-only">Edit person</span>
+                    Edit
                   </button>
                   <button
                     type="button"
-                    class="inline-flex size-8 items-center justify-center rounded-md text-stone-500 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
-                    title="Delete person"
+                    class="rounded-md px-3 py-2 text-sm font-medium text-stone-600 hover:bg-rose-50 hover:text-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500"
                     @click="confirmDelete(person)"
                   >
-                    <Trash2 class="size-4" aria-hidden="true" />
-                    <span class="sr-only">Delete person</span>
+                    Delete
                   </button>
                 </div>
               </td>

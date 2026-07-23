@@ -1,5 +1,11 @@
-import { computed, type ComputedRef, type Ref } from 'vue'
-import { useMutation, useMutationState, useQuery, useQueryClient } from '@tanstack/vue-query'
+import { computed, type ComputedRef } from 'vue'
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useMutationState,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import { TransactionController } from '../controllers/TransactionController'
 import { TransactionPersonController } from '../controllers/TransactionPersonController'
 import type { PersonEntity } from '../entities/PersonEntity'
@@ -13,6 +19,10 @@ import type { TransactionPersonEntity } from '../entities/TransactionPersonEntit
 import { financeKeys } from './queryKeys'
 
 type TransactionQueryKey = ReturnType<typeof financeKeys.transactionList>
+
+export type TransactionQueryParams = Omit<ListTransactionParams, 'limit' | 'page'>
+
+export const TRANSACTION_PAGE_SIZE = 20
 
 export interface SaveTransactionVariables {
   editing: TransactionWithPerson | null
@@ -42,11 +52,22 @@ interface DeleteTransactionMutationOptions {
   onError?: (error: Error) => void
 }
 
-export function useTransactionsQuery(params: ComputedRef<ListTransactionParams>) {
-  const queryKey = computed(() => financeKeys.transactionList(params.value))
-  const query = useQuery({
+export function useTransactionsQuery(params: ComputedRef<TransactionQueryParams>) {
+  const queryKey = computed(() => financeKeys.transactionList({
+    ...params.value,
+    limit: TRANSACTION_PAGE_SIZE,
+  }))
+  const query = useInfiniteQuery({
     queryKey,
-    queryFn: ({ signal }) => TransactionController.list(params.value, signal),
+    queryFn: ({ pageParam, signal }) => TransactionController.list({
+      ...params.value,
+      page: pageParam,
+      limit: TRANSACTION_PAGE_SIZE,
+    }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined
+    ),
   })
 
   return { query, queryKey }
@@ -129,7 +150,6 @@ export function usePendingAssignmentIds() {
 
 export function useDeleteTransactionMutation(
   transactionQueryKey: ComputedRef<TransactionQueryKey>,
-  page: Ref<number>,
   options: DeleteTransactionMutationOptions = {},
 ) {
   const queryClient = useQueryClient()
@@ -137,7 +157,7 @@ export function useDeleteTransactionMutation(
   return useMutation({
     mutationFn: (transactionId: string) => TransactionController.delete(transactionId),
     onSuccess: (_result, transactionId) => {
-      removeTransactionFromCache(queryClient, transactionQueryKey.value, page, transactionId)
+      removeTransactionFromCache(queryClient, transactionQueryKey.value, transactionId)
       options.onSuccess?.()
     },
     onError: (error) => {
@@ -201,15 +221,18 @@ function updateTransactionAssignment(
     ? people.find((item) => item.id === transactionPerson.personId) ?? null
     : null
 
-  queryClient.setQueryData<ListTransactionResponse>(queryKey, (response) => (
+  queryClient.setQueryData<InfiniteData<ListTransactionResponse>>(queryKey, (response) => (
     response
       ? {
           ...response,
-          transactions: response.transactions.map((item) =>
-            item.transaction.id === transactionId
-              ? { ...item, transactionPerson, person }
-              : item,
-          ),
+          pages: response.pages.map((page) => ({
+            ...page,
+            transactions: page.transactions.map((item) =>
+              item.transaction.id === transactionId
+                ? { ...item, transactionPerson, person }
+                : item,
+            ),
+          })),
         }
       : response
   ))
@@ -218,33 +241,37 @@ function updateTransactionAssignment(
 function removeTransactionFromCache(
   queryClient: ReturnType<typeof useQueryClient>,
   queryKey: TransactionQueryKey,
-  page: Ref<number>,
   transactionId: string,
 ) {
-  let nextTotal = 0
-  let nextTotalPages = 0
-
-  queryClient.setQueryData<ListTransactionResponse>(queryKey, (response) => {
+  queryClient.setQueryData<InfiniteData<ListTransactionResponse>>(queryKey, (response) => {
     if (!response) {
       return response
     }
 
-    nextTotal = Math.max(response.total - 1, 0)
-    nextTotalPages = nextTotal === 0 ? 0 : Math.ceil(nextTotal / response.limit)
+    const containsTransaction = response.pages.some((page) =>
+      page.transactions.some((item) => item.transaction.id === transactionId),
+    )
+
+    if (!containsTransaction) {
+      return response
+    }
 
     return {
       ...response,
-      transactions: response.transactions.filter((item) => item.transaction.id !== transactionId),
-      total: nextTotal,
-      totalPages: nextTotalPages,
+      pages: response.pages.map((page) => {
+        const nextTotal = Math.max(page.total - 1, 0)
+
+        return {
+          ...page,
+          transactions: page.transactions.filter(
+            (item) => item.transaction.id !== transactionId,
+          ),
+          total: nextTotal,
+          totalPages: nextTotal === 0 ? 0 : Math.ceil(nextTotal / page.limit),
+        }
+      }),
     }
   })
-
-  if (nextTotal === 0) {
-    page.value = 1
-  } else if (page.value > nextTotalPages) {
-    page.value = nextTotalPages
-  }
 }
 
 async function invalidateTransactionData(queryClient: ReturnType<typeof useQueryClient>) {

@@ -1,25 +1,17 @@
 <script setup lang="ts">
-import RefreshButton from '../buttons/RefreshButton.vue'
 import ViewTitle from '../titles/ViewTitle.vue'
 
-withDefaults(
-  defineProps<{
-    title: string
-    refreshing?: boolean
-  }>(),
-  {
-    refreshing: false,
-  },
-)
-
-defineEmits<{
-  refresh: []
+defineProps<{
+  title: string
 }>()
 </script>
 
 <template>
   <header class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
     <ViewTitle :title="title" />
-    <RefreshButton :refreshing="refreshing" @refresh="$emit('refresh')" />
+
+    <div v-if="$slots.actions" class="flex flex-wrap gap-3">
+      <slot name="actions"></slot>
+    </div>
   </header>
 </template>

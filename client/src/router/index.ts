@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import DashboardView from '../views/dashboard/index.vue'
-import TransactionsView from '../views/TransactionsView.vue'
+import TransactionsView from '../views/transactions/index.vue'
 import PeopleView from '../views/PeopleView.vue'
 import ImportsView from '../views/ImportsView.vue'
 

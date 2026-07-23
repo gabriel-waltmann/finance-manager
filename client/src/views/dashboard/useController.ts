@@ -8,6 +8,11 @@ import {
   ref,
   watch,
 } from 'vue'
+import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
+import type {
+  DataTableHeader,
+  DataTableRow,
+} from '../../components/tables/types'
 import { displayAmount } from '../../lib/format'
 import {
   useDashboardQuery,
@@ -15,6 +20,12 @@ import {
 } from '../../queries/DashboardQueries'
 import { usePeopleQuery } from '../../queries/PersonQueries'
 import { useToast } from '../../stores/toast'
+
+const tableHeaders: DataTableHeader[] = [
+  { key: 'title', label: 'Title', class: 'min-w-64' },
+  { key: 'transactions', label: 'Transactions', class: 'whitespace-nowrap' },
+  { key: 'amount', label: 'Amount', align: 'right', class: 'whitespace-nowrap' },
+]
 
 export function useController() {
   const toast = useToast()
@@ -48,15 +59,28 @@ export function useController() {
   const loading = computed(() => dashboardQuery.isPending.value)
   const loadingMore = computed(() => dashboardQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => dashboardQuery.isFetchNextPageError.value)
-  const refreshing = computed(() => dashboardQuery.isRefetching.value)
   const error = computed(() => readError(dashboardQuery.error.value ?? peopleQuery.error.value))
 
-  const chartItems = computed(() =>
+  const tableRows = computed<DataTableRow[]>(() =>
     topItems.value.map((item) => ({
       key: item.title,
-      label: item.title,
-      value: item.totalAmount,
-      detail: `${item.transactionCount} ${item.transactionCount === 1 ? 'transaction' : 'transactions'}`,
+      cells: [
+        {
+          component: DataTableTextCell,
+          props: {
+            class: 'font-medium text-stone-950',
+            text: item.title,
+          },
+        },
+        String(item.transactionCount),
+        {
+          component: DataTableTextCell,
+          props: {
+            class: 'font-semibold text-stone-800',
+            text: displayAmount(item.totalAmount),
+          },
+        },
+      ],
     })),
   )
 
@@ -142,10 +166,6 @@ export function useController() {
     },
   )
 
-  function loadDashboard() {
-    void dashboardQuery.refetch()
-  }
-
   function setLoadMoreTarget(target: Element | ComponentPublicInstance | null) {
     loadMoreTarget.value = target instanceof HTMLElement ? target : null
   }
@@ -157,20 +177,19 @@ export function useController() {
   }
 
   return {
-    chartItems,
     displayAmount,
     error,
     filters,
     hasNextPage,
-    loadDashboard,
     loadMoreFailed,
     loadNextPage,
     loadProgress,
     loading,
     loadingMore,
     people,
-    refreshing,
     setLoadMoreTarget,
+    tableHeaders,
+    tableRows,
     totalSpend,
   }
 }

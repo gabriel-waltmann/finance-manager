@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Landmark } from 'lucide-vue-next'
+import { PhWallet } from '@phosphor-icons/vue'
 import { RouterLink, RouterView } from 'vue-router'
 import ToastHost from './components/toasts/HostToast.vue'
 
@@ -16,9 +16,9 @@ const navItems = [
     <header class="border-b border-stone-200 bg-white">
       <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
         <div class="flex items-center gap-3">
-          <span class="inline-flex size-10 items-center justify-center rounded-lg bg-emerald-600 text-white">
-            <Landmark class="size-5" aria-hidden="true" />
-          </span>
+          <div class="flex size-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
+            <PhWallet :size="24" weight="duotone" aria-hidden="true" />
+          </div>
           <div>
             <p class="text-lg font-semibold text-stone-950">Finance Manager</p>
             <p class="text-sm text-stone-500">Transactions, people, and assignments</p>

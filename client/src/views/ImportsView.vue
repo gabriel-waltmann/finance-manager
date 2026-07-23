@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { ChevronLeft, ChevronRight, FileUp, RefreshCw, Search, X } from 'lucide-vue-next'
+import TextInput from '../components/inputs/TextInput.vue'
 import { displayDateTime } from '../lib/format'
 import {
   openTransactionImportEventStream,
@@ -168,17 +168,6 @@ function clearSearchDebounce() {
   }
 }
 
-function clearSearch() {
-  if (!filters.search) {
-    return
-  }
-
-  filters.search = ''
-  clearSearchDebounce()
-  page.value = 1
-  debouncedSearch.value = ''
-}
-
 function applyStatusFilter() {
   page.value = 1
 }
@@ -289,7 +278,6 @@ function readError(err: unknown): string {
           :disabled="uploadPending"
           @click="chooseFile"
         >
-          <FileUp class="size-4" aria-hidden="true" />
           {{ uploadPending ? 'Uploading...' : 'Upload CSV' }}
         </button>
         <button
@@ -297,7 +285,6 @@ function readError(err: unknown): string {
           class="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           @click="loadImports()"
         >
-          <RefreshCw class="size-4" aria-hidden="true" />
           Refresh
         </button>
       </div>
@@ -305,28 +292,7 @@ function readError(err: unknown): string {
 
     <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
       <div class="grid gap-3 md:grid-cols-2 lg:grid-cols-[minmax(14rem,1fr)_minmax(0,1fr)_10rem_10rem] lg:items-end">
-        <label class="block">
-          <span class="text-sm font-medium text-stone-700">Search</span>
-          <span class="relative mt-1 block">
-            <Search class="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-stone-400" aria-hidden="true" />
-            <input
-              v-model="filters.search"
-              class="w-full rounded-md border border-stone-300 py-2 pl-9 pr-10 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
-              type="search"
-              placeholder="File name"
-            />
-            <button
-              v-if="filters.search"
-              type="button"
-              class="absolute right-1.5 top-1/2 inline-flex size-7 -translate-y-1/2 items-center justify-center rounded-md text-stone-400 hover:bg-stone-100 hover:text-stone-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              title="Clear search"
-              @click="clearSearch"
-            >
-              <X class="size-4" aria-hidden="true" />
-              <span class="sr-only">Clear search</span>
-            </button>
-          </span>
-        </label>
+        <TextInput v-model="filters.search" label="Search" type="search" placeholder="File name" />
         <label class="block">
           <span class="text-sm font-medium text-stone-700">Status</span>
           <select
@@ -408,24 +374,20 @@ function readError(err: unknown): string {
         <div class="flex items-center gap-3">
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Previous page"
+            class="rounded-md border border-stone-300 px-3 py-2 font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="!hasPreviousPage"
             @click="goToPreviousPage"
           >
-            <ChevronLeft class="size-4" aria-hidden="true" />
-            <span class="sr-only">Previous page</span>
+            Previous
           </button>
           <span class="min-w-20 text-center font-medium text-stone-700">{{ pagination.page }} / {{ visibleTotalPages }}</span>
           <button
             type="button"
-            class="inline-flex size-8 items-center justify-center rounded-md border border-stone-300 text-stone-500 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-            title="Next page"
+            class="rounded-md border border-stone-300 px-3 py-2 font-medium text-stone-600 hover:bg-stone-100 hover:text-stone-950 focus:outline-none focus:ring-2 focus:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
             :disabled="!hasNextPage"
             @click="goToNextPage"
           >
-            <ChevronRight class="size-4" aria-hidden="true" />
-            <span class="sr-only">Next page</span>
+            Next
           </button>
         </div>
       </div>
