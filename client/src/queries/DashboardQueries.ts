@@ -1,12 +1,18 @@
 import { computed, type ComputedRef } from 'vue'
-import { useQuery } from '@tanstack/vue-query'
+import { useInfiniteQuery } from '@tanstack/vue-query'
 import { TransactionController } from '../controllers/TransactionController'
 import type { DashboardParams } from '../entities/Dashboard'
 import { financeKeys } from './queryKeys'
 
-export function useDashboardQuery(params: ComputedRef<DashboardParams>) {
-  return useQuery({
+export type DashboardQueryParams = Omit<DashboardParams, 'page'>
+
+export function useDashboardQuery(params: ComputedRef<DashboardQueryParams>) {
+  return useInfiniteQuery({
     queryKey: computed(() => financeKeys.dashboard(params.value)),
-    queryFn: ({ signal }) => TransactionController.getDashboard(params.value, signal),
+    queryFn: ({ pageParam, signal }) =>
+      TransactionController.getDashboard({ ...params.value, page: pageParam }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
   })
 }

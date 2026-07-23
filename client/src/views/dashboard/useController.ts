@@ -1,7 +1,18 @@
-import { computed, reactive, ref, watch } from 'vue'
-import type { DashboardParams } from '../../entities/Dashboard'
+import {
+  computed,
+  type ComponentPublicInstance,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue'
 import { displayAmount } from '../../lib/format'
-import { useDashboardQuery } from '../../queries/DashboardQueries'
+import {
+  useDashboardQuery,
+  type DashboardQueryParams,
+} from '../../queries/DashboardQueries'
 import { usePeopleQuery } from '../../queries/PersonQueries'
 import { useToast } from '../../stores/toast'
 
@@ -9,9 +20,6 @@ export function useController() {
   const toast = useToast()
 
   const defaultRange = getPreviousMonthRange()
-  const pageSizeOptions = [10, 20, 50, 100]
-  const page = ref(1)
-  const limit = ref(20)
 
   const filters = reactive({
     startDate: defaultRange.startDate,
@@ -20,31 +28,28 @@ export function useController() {
     order: 'desc' as 'asc' | 'desc',
   })
 
-  const dashboardParams = computed<DashboardParams>(() => ({
+  const dashboardParams = computed<DashboardQueryParams>(() => ({
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     personId: filters.personId || undefined,
-    page: page.value,
-    limit: limit.value,
+    limit: 20,
     order: filters.order,
   }))
 
   const dashboardQuery = useDashboardQuery(dashboardParams)
   const peopleQuery = usePeopleQuery()
 
-  const topItems = computed(() => dashboardQuery.data.value?.topItems ?? [])
-  const totalSpend = computed(() => dashboardQuery.data.value?.totalAmount ?? 0)
+  const pages = computed(() => dashboardQuery.data.value?.pages ?? [])
+  const topItems = computed(() => pages.value.flatMap((page) => page.topItems))
+  const firstPage = computed(() => pages.value[0])
+  const totalSpend = computed(() => firstPage.value?.totalAmount ?? 0)
+  const totalItems = computed(() => firstPage.value?.total ?? 0)
   const people = computed(() => peopleQuery.data.value ?? [])
   const loading = computed(() => dashboardQuery.isPending.value)
-  const refreshing = computed(() => dashboardQuery.isFetching.value)
+  const loadingMore = computed(() => dashboardQuery.isFetchingNextPage.value)
+  const loadMoreFailed = computed(() => dashboardQuery.isFetchNextPageError.value)
+  const refreshing = computed(() => dashboardQuery.isRefetching.value)
   const error = computed(() => readError(dashboardQuery.error.value ?? peopleQuery.error.value))
-
-  const pagination = computed(() => ({
-    page: dashboardQuery.data.value?.page ?? page.value,
-    limit: dashboardQuery.data.value?.limit ?? limit.value,
-    total: dashboardQuery.data.value?.total ?? 0,
-    totalPages: dashboardQuery.data.value?.totalPages ?? 0,
-  }))
 
   const chartItems = computed(() =>
     topItems.value.map((item) => ({
@@ -55,38 +60,69 @@ export function useController() {
     })),
   )
 
-  const visibleTotalPages = computed(() => Math.max(pagination.value.totalPages, 1))
-  const hasPreviousPage = computed(() => pagination.value.page > 1)
-  const hasNextPage = computed(() => pagination.value.page < pagination.value.totalPages)
+  const hasNextPage = computed(() => dashboardQuery.hasNextPage.value)
+  const loadProgress = computed(() => `${topItems.value.length} of ${totalItems.value}`)
+  const loadMoreTarget = ref<HTMLElement | null>(null)
+  const loadMoreVisible = ref(false)
+  let loadMoreObserver: IntersectionObserver | undefined
 
-  const pageRange = computed(() => {
-    if (pagination.value.total === 0) {
-      return '0 of 0'
+  function loadMoreIfNeeded() {
+    const target = loadMoreTarget.value
+    const targetBounds = target?.getBoundingClientRect()
+    const targetIsNearViewport =
+      targetBounds !== undefined &&
+      targetBounds.top <= window.innerHeight + 200 &&
+      targetBounds.bottom >= -200
+
+    if (
+      loadMoreVisible.value &&
+      targetIsNearViewport &&
+      hasNextPage.value &&
+      !loadingMore.value &&
+      !loadMoreFailed.value
+    ) {
+      loadNextPage()
     }
-
-    if (topItems.value.length === 0) {
-      return `0 of ${pagination.value.total}`
-    }
-
-    const start = (pagination.value.page - 1) * pagination.value.limit + 1
-    const end = Math.min(start + topItems.value.length - 1, pagination.value.total)
-
-    return `${start}-${end} of ${pagination.value.total}`
-  })
+  }
 
   watch(
-    () => dashboardQuery.data.value,
-    (dashboard) => {
-      if (
-        dashboard &&
-        dashboard.topItems.length === 0 &&
-        dashboard.total > 0 &&
-        page.value > dashboard.totalPages
-      ) {
-        page.value = dashboard.totalPages
+    loadMoreTarget,
+    (target, previousTarget) => {
+      if (previousTarget) {
+        loadMoreObserver?.unobserve(previousTarget)
+      }
+
+      if (target) {
+        loadMoreObserver?.observe(target)
       }
     },
+    { flush: 'post' },
   )
+
+  watch(loadingMore, async (isLoadingMore, wasLoadingMore) => {
+    if (wasLoadingMore && !isLoadingMore) {
+      await nextTick()
+      loadMoreIfNeeded()
+    }
+  })
+
+  onMounted(() => {
+    loadMoreObserver = new IntersectionObserver(
+      ([entry]) => {
+        loadMoreVisible.value = entry?.isIntersecting ?? false
+        loadMoreIfNeeded()
+      },
+      { rootMargin: '200px 0px' },
+    )
+
+    if (loadMoreTarget.value) {
+      loadMoreObserver.observe(loadMoreTarget.value)
+    }
+  })
+
+  onBeforeUnmount(() => {
+    loadMoreObserver?.disconnect()
+  })
 
   watch(
     () => dashboardQuery.error.value,
@@ -110,47 +146,32 @@ export function useController() {
     void dashboardQuery.refetch()
   }
 
-  function applyFilters() {
-    page.value = 1
+  function setLoadMoreTarget(target: Element | ComponentPublicInstance | null) {
+    loadMoreTarget.value = target instanceof HTMLElement ? target : null
   }
 
-  function changeLimit(value: number) {
-    limit.value = value
-    page.value = 1
-  }
-
-  function goToPreviousPage() {
-    if (hasPreviousPage.value) {
-      page.value -= 1
-    }
-  }
-
-  function goToNextPage() {
-    if (hasNextPage.value) {
-      page.value += 1
+  function loadNextPage() {
+    if (dashboardQuery.hasNextPage.value && !dashboardQuery.isFetchingNextPage.value) {
+      void dashboardQuery.fetchNextPage()
     }
   }
 
   return {
-    applyFilters,
-    changeLimit,
     chartItems,
     displayAmount,
     error,
     filters,
-    goToNextPage,
-    goToPreviousPage,
     hasNextPage,
-    hasPreviousPage,
     loadDashboard,
+    loadMoreFailed,
+    loadNextPage,
+    loadProgress,
     loading,
-    pageRange,
-    pageSizeOptions,
-    pagination,
+    loadingMore,
     people,
     refreshing,
+    setLoadMoreTarget,
     totalSpend,
-    visibleTotalPages,
   }
 }
 
