@@ -13,7 +13,7 @@ Transaction CSV imports are asynchronous. The upload request stores the original
 | `TransactionImportJob` | Consumes RabbitMQ messages, parses CSV data, creates transactions and import links, and changes status. |
 | `FileProcessingService` | Reads import history, persists status transitions, builds API responses, and broadcasts changes. |
 | `TransactionImportEventBroadcaster` | Fans status changes out to connected SSE subscribers inside the API process. |
-| `ImportsView.vue` | Lists imports, uploads files, opens the SSE connection, and reconciles live updates with the API. |
+| `views/imports/` | Lists imports, uploads files, opens the SSE connection, and reconciles live updates with the API. |
 
 `file_id`, `file_processing_id`, and `transaction_id` are application-level links in the current file/import schema; these models do not configure EF Core navigation properties or database foreign-key constraints.
 
@@ -137,4 +137,4 @@ The broadcaster is in-memory and process-local. With multiple API instances, an 
 - RabbitMQ publisher and worker: `api/Services/Job`
 - Import provenance: `api/Models/TransactionImport` and `api/Services/TransactionImport`
 - Client API and status stream: `client/src/controllers/TransactionController.ts` and `client/src/queries/TransactionImportQueries.ts`
-- Client imports view: `client/src/views/ImportsView.vue`
+- Client imports view: `client/src/views/imports/`

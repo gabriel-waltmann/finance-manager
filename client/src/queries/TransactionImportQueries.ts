@@ -1,5 +1,10 @@
 import { computed, type ComputedRef } from 'vue'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/vue-query'
+import {
+  type InfiniteData,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from '@tanstack/vue-query'
 import {
   TransactionController,
   type TransactionImportEventHandlers,
@@ -11,6 +16,10 @@ import type {
   TransactionImportEntity,
 } from '../entities/TransactionImportEntity'
 import { financeKeys } from './queryKeys'
+
+export type TransactionImportQueryParams = Omit<ListTransactionImportParams, 'limit' | 'page'>
+
+export const TRANSACTION_IMPORT_PAGE_SIZE = 20
 
 export interface UploadTransactionVariables {
   file: File
@@ -24,11 +33,25 @@ interface UploadTransactionMutationOptions {
   onSettled?: (variables: UploadTransactionVariables) => void
 }
 
-export function useTransactionImportsQuery(params: ComputedRef<ListTransactionImportParams>) {
-  return useQuery({
-    queryKey: computed(() => financeKeys.importList(params.value)),
-    queryFn: ({ signal }) => TransactionController.listImports(params.value, signal),
+export function useTransactionImportsQuery(params: ComputedRef<TransactionImportQueryParams>) {
+  const queryKey = computed(() => financeKeys.importList({
+    ...params.value,
+    limit: TRANSACTION_IMPORT_PAGE_SIZE,
+  }))
+  const query = useInfiniteQuery({
+    queryKey,
+    queryFn: ({ pageParam, signal }) => TransactionController.listImports({
+      ...params.value,
+      page: pageParam,
+      limit: TRANSACTION_IMPORT_PAGE_SIZE,
+    }, signal),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined
+    ),
   })
+
+  return { query, queryKey }
 }
 
 export function useUploadTransactionMutation(options: UploadTransactionMutationOptions = {}) {
@@ -59,18 +82,23 @@ export function useTransactionImportCache() {
   }
 
   function update(transactionImport: TransactionImportEntity) {
-    queryClient.setQueriesData<ListTransactionImportResponse>(
+    queryClient.setQueriesData<InfiniteData<ListTransactionImportResponse>>(
       { queryKey: financeKeys.imports() },
       (response) => {
-        if (!response?.imports.some((item) => item.id === transactionImport.id)) {
+        if (!response?.pages.some((page) =>
+          page.imports.some((item) => item.id === transactionImport.id),
+        )) {
           return response
         }
 
         return {
           ...response,
-          imports: response.imports.map((item) =>
-            item.id === transactionImport.id ? transactionImport : item,
-          ),
+          pages: response.pages.map((page) => ({
+            ...page,
+            imports: page.imports.map((item) =>
+              item.id === transactionImport.id ? transactionImport : item,
+            ),
+          })),
         }
       },
     )
