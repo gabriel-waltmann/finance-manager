@@ -82,6 +82,10 @@ export function useController() {
 
   const pages = computed(() => transactionQuery.data.value?.pages ?? [])
   const transactions = computed(() => pages.value.flatMap((page) => page.transactions))
+  const loadedAmountTotal = computed(() => transactions.value.reduce(
+    (total, item) => total + item.transaction.amount,
+    0,
+  ))
   const firstPage = computed(() => pages.value[0])
   const persons = computed(() => personOptionsQuery.data.value ?? [])
   const loading = computed(() => transactionQuery.isPending.value)
@@ -369,6 +373,7 @@ export function useController() {
     loadMoreFailed,
     loadNextPage,
     loadProgress,
+    loadedAmountTotal,
     loading,
     loadingMore,
     openCreateForm,

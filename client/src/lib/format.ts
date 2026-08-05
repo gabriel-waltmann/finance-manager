@@ -43,3 +43,10 @@ export function displayAmount(value: number): string {
     maximumFractionDigits: 2,
   }).format(value)
 }
+
+export function displayBRLCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(value)
+}

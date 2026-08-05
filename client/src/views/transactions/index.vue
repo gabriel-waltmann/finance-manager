@@ -6,6 +6,7 @@ import ViewHeader from '../../components/headers/ViewHeader.vue'
 import DataTable from '../../components/tables/DataTable.vue'
 import TransactionFilter from './components/TransactionFilter.vue'
 import TransactionFormDialog from './components/TransactionFormDialog.vue'
+import TransactionTotalCard from './components/TransactionTotalCard.vue'
 import { useController } from './useController'
 
 const {
@@ -23,6 +24,7 @@ const {
   loadMoreFailed,
   loadNextPage,
   loadProgress,
+  loadedAmountTotal,
   loading,
   loadingMore,
   openCreateForm,
@@ -52,6 +54,12 @@ const {
       v-model:person-filter="filters.personFilter"
       v-model:order="filters.order"
       :persons="persons"
+    />
+
+    <TransactionTotalCard
+      :amount="loadedAmountTotal"
+      :loading="loading"
+      :unavailable="Boolean(transactionError) && tableRows.length === 0"
     />
 
     <ErrorAlert v-if="personError" :message="personError" />
