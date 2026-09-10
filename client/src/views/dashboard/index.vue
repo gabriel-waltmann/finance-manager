@@ -6,6 +6,7 @@ import DashboardFilter from './components/Filter.vue'
 import { useController } from './useController'
 
 const {
+  categories,
   displayAmount,
   error,
   filters,
@@ -31,7 +32,9 @@ const {
       v-model:start-date="filters.startDate"
       v-model:end-date="filters.endDate"
       v-model:person-id="filters.personId"
+      v-model:category-filter="filters.categoryFilter"
       v-model:order="filters.order"
+      :categories="categories"
       :persons="persons"
     />
 

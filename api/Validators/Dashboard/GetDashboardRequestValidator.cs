@@ -23,6 +23,16 @@ public class GetDashboardRequestValidator : AbstractValidator<GetDashboardReques
       .When(request => request.PersonId.HasValue)
       .WithMessage("PersonId must be a non-empty GUID.");
 
+    RuleFor(request => request.CategoryId)
+      .NotEqual(Guid.Empty)
+      .When(request => request.CategoryId.HasValue)
+      .WithMessage("CategoryId must be a non-empty GUID.");
+
+    RuleFor(request => request)
+      .Must(request => !request.CategoryId.HasValue || !request.Uncategorized)
+      .WithName(nameof(GetDashboardRequest.CategoryId))
+      .WithMessage("CategoryId and uncategorized cannot be used together.");
+
     RuleFor(request => request)
       .Must(request => !request.StartDate.HasValue ||
         !request.EndDate.HasValue ||

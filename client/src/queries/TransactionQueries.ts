@@ -192,7 +192,10 @@ export function useCategoryAssignmentMutation(
     },
     onError: (error, variables) => options.onError?.(error, variables),
     onSettled: async () => {
-      await queryClient.invalidateQueries({ queryKey: financeKeys.transactions() })
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: financeKeys.transactions() }),
+        queryClient.invalidateQueries({ queryKey: financeKeys.dashboards() }),
+      ])
     },
   })
 }

@@ -55,6 +55,21 @@ public class FilterRequestValidatorTests
   }
 
   [Fact]
+  public void Dashboard_rejects_invalid_category_filters()
+  {
+    var request = new GetDashboardRequest
+    {
+      CategoryId = Guid.Empty,
+      Uncategorized = true
+    };
+
+    var result = new GetDashboardRequestValidator().TestValidate(request);
+
+    result.ShouldHaveValidationErrorFor(item => item.CategoryId);
+    Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("cannot be used together"));
+  }
+
+  [Fact]
   public void Import_list_rejects_unknown_status()
   {
     var request = new ListTransactionImportRequest { Status = "Queued" };

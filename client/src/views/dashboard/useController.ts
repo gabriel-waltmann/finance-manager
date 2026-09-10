@@ -18,6 +18,7 @@ import {
   useDashboardQuery,
   type DashboardQueryParams,
 } from '../../queries/DashboardQueries'
+import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
 import { usePersonOptionsQuery } from '../../queries/PersonQueries'
 import { useToast } from '../../stores/toast'
 
@@ -36,6 +37,7 @@ export function useController() {
     startDate: defaultRange.startDate,
     endDate: defaultRange.endDate,
     personId: '',
+    categoryFilter: '',
     order: 'desc' as 'asc' | 'desc',
   })
 
@@ -43,12 +45,17 @@ export function useController() {
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     personId: filters.personId || undefined,
+    categoryId: filters.categoryFilter && filters.categoryFilter !== 'uncategorized'
+      ? filters.categoryFilter
+      : undefined,
+    uncategorized: filters.categoryFilter === 'uncategorized' ? true : undefined,
     limit: 20,
     order: filters.order,
   }))
 
   const dashboardQuery = useDashboardQuery(dashboardParams)
   const personOptionsQuery = usePersonOptionsQuery()
+  const categoryOptionsQuery = useCategoryOptionsQuery()
 
   const pages = computed(() => dashboardQuery.data.value?.pages ?? [])
   const topItems = computed(() => pages.value.flatMap((page) => page.topItems))
@@ -56,11 +63,14 @@ export function useController() {
   const totalSpend = computed(() => firstPage.value?.totalAmount ?? 0)
   const totalItems = computed(() => firstPage.value?.total ?? 0)
   const persons = computed(() => personOptionsQuery.data.value ?? [])
+  const categories = computed(() => categoryOptionsQuery.data.value ?? [])
   const loading = computed(() => dashboardQuery.isPending.value)
   const loadingMore = computed(() => dashboardQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => dashboardQuery.isFetchNextPageError.value)
   const error = computed(() => readError(
-    dashboardQuery.error.value ?? personOptionsQuery.error.value,
+    dashboardQuery.error.value ??
+      personOptionsQuery.error.value ??
+      categoryOptionsQuery.error.value,
   ))
 
   const tableRows = computed<DataTableRow[]>(() =>
@@ -168,6 +178,15 @@ export function useController() {
     },
   )
 
+  watch(
+    () => categoryOptionsQuery.error.value,
+    (queryError) => {
+      if (queryError) {
+        toast.error(readError(queryError))
+      }
+    },
+  )
+
   function setLoadMoreTarget(target: Element | ComponentPublicInstance | null) {
     loadMoreTarget.value = target instanceof HTMLElement ? target : null
   }
@@ -179,6 +198,7 @@ export function useController() {
   }
 
   return {
+    categories,
     displayAmount,
     error,
     filters,

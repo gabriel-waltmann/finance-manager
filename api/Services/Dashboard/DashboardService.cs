@@ -46,6 +46,36 @@ public class DashboardService(DatabaseContext context)
         select transaction;
     }
 
+    if (request.CategoryId.HasValue)
+    {
+      var categoryId = request.CategoryId.Value;
+
+      query = query.Where(transaction =>
+        _context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          transactionCategory.CategoryId == categoryId &&
+          _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            category.Deleted_at == null
+          )
+        )
+      );
+    }
+    else if (request.Uncategorized)
+    {
+      query = query.Where(transaction =>
+        !_context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            category.Deleted_at == null
+          )
+        )
+      );
+    }
+
     var totalAmount = await query
       .SumAsync(transaction => (decimal?)-transaction.Amount) ?? 0;
 

@@ -2,15 +2,18 @@
 import { computed } from 'vue'
 import DateInput from '../../../components/inputs/DateInput.vue'
 import SelectInput from '../../../components/inputs/SelectInput.vue'
+import type { CategoryEntity } from '../../../entities/CategoryEntity'
 import type { PersonEntity } from '../../../entities/PersonEntity'
 
 const props = defineProps<{
+  categories: CategoryEntity[]
   persons: PersonEntity[]
 }>()
 
 const startDate = defineModel<string>('startDate', { required: true })
 const endDate = defineModel<string>('endDate', { required: true })
 const personId = defineModel<string>('personId', { required: true })
+const categoryFilter = defineModel<string>('categoryFilter', { required: true })
 const order = defineModel<'asc' | 'desc'>('order', { required: true })
 
 const personOptions = computed(() => [
@@ -18,6 +21,15 @@ const personOptions = computed(() => [
   ...props.persons.map((person) => ({
     label: person.name,
     value: person.id,
+  })),
+])
+
+const categoryOptions = computed(() => [
+  { label: 'Any category', value: '' },
+  { label: 'Uncategorized', value: 'uncategorized' },
+  ...props.categories.map((category) => ({
+    label: category.title,
+    value: category.id,
   })),
 ])
 
@@ -39,7 +51,7 @@ function updateOrder(value: string) {
 
 <template>
   <div class="rounded-lg border border-stone-200 bg-white px-4 py-3">
-    <div class="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_10rem] md:items-end">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_10rem] xl:items-end">
       <DateInput v-model="startDate" label="Start date" />
       <DateInput v-model="endDate" label="End date" />
       <SelectInput
@@ -47,6 +59,11 @@ function updateOrder(value: string) {
         label="Person"
         :options="personOptions"
         @update:model-value="updatePersonId"
+      />
+      <SelectInput
+        v-model="categoryFilter"
+        label="Category"
+        :options="categoryOptions"
       />
       <SelectInput
         :model-value="order"

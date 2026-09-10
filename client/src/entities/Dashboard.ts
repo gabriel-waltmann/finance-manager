@@ -27,6 +27,8 @@ export interface DashboardParams {
   startDate?: string
   endDate?: string
   personId?: Id
+  categoryId?: Id
+  uncategorized?: boolean
   page?: number
   limit?: number
   order?: 'asc' | 'desc'

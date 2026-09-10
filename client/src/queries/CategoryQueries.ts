@@ -99,6 +99,7 @@ export function useDeleteCategoryMutation(options: DeleteCategoryMutationOptions
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: financeKeys.category() }),
         queryClient.invalidateQueries({ queryKey: financeKeys.transactions() }),
+        queryClient.invalidateQueries({ queryKey: financeKeys.dashboards() }),
       ])
     },
   })
