@@ -6,10 +6,13 @@ import CurrencyInput from '../../../components/inputs/CurrencyInput.vue'
 import DateInput from '../../../components/inputs/DateInput.vue'
 import SelectInput from '../../../components/inputs/SelectInput.vue'
 import TextInput from '../../../components/inputs/TextInput.vue'
+import MultiSelectInput from '../../../components/inputs/MultiSelectInput.vue'
 import type { PersonEntity } from '../../../entities/PersonEntity'
+import type { CategoryEntity } from '../../../entities/CategoryEntity'
 
 const props = defineProps<{
   editing: boolean
+  categories: CategoryEntity[]
   open: boolean
   persons: PersonEntity[]
   saving: boolean
@@ -19,6 +22,7 @@ const date = defineModel<string>('date', { required: true })
 const title = defineModel<string>('title', { required: true })
 const amount = defineModel<string>('amount', { required: true })
 const personId = defineModel<string>('personId', { required: true })
+const categoryIds = defineModel<string[]>('categoryIds', { required: true })
 
 const personOptions = computed(() => [
   { label: 'Unassigned', value: '' },
@@ -27,6 +31,11 @@ const personOptions = computed(() => [
     value: person.id,
   })),
 ])
+
+const categoryOptions = computed(() => props.categories.map((category) => ({
+  label: category.title,
+  value: category.id,
+})))
 
 defineEmits<{
   close: []
@@ -44,6 +53,13 @@ defineEmits<{
       <CurrencyInput v-model="amount" label="Amount" required />
       
       <SelectInput v-model="personId" label="Person" :options="personOptions" />
+
+      <MultiSelectInput
+        v-model="categoryIds"
+        label="Categories"
+        :options="categoryOptions"
+        placeholder="Select categories"
+      />
       
       <div class="flex justify-end gap-3 pt-2">
         <FilledButton

@@ -3,6 +3,7 @@ import DashboardView from '../views/dashboard/index.vue'
 import TransactionsView from '../views/transactions/index.vue'
 import PersonView from '../views/person/index.vue'
 import ImportsView from '../views/imports/index.vue'
+import CategoryView from '../views/category/index.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -21,6 +22,11 @@ const router = createRouter({
       path: '/person',
       name: 'person',
       component: PersonView,
+    },
+    {
+      path: '/category',
+      name: 'category',
+      component: CategoryView,
     },
     {
       path: '/imports',

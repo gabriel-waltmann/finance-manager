@@ -3,6 +3,8 @@ using api.Models.Transaction;
 using api.Models.Database;
 using api.Models.Person;
 using api.Models.TransactionPerson;
+using api.Models.Category;
+using api.Models.TransactionCategory;
 using api.Responses.Transaction;
 using api.Exceptions;
 using Microsoft.EntityFrameworkCore;
@@ -35,19 +37,23 @@ public class TransactionService(DatabaseContext context)
     ) ?? throw new NotFoundTransactionException();
   }
 
-  public async Task<GetTransactionResponse> GetWithTransactionPerson(Guid id)
+  public async Task<GetTransactionResponse> GetWithAssignments(Guid id)
   {
     var transaction = await Get(id);
     var transactionPerson = await GetTransactionPerson(transaction.Id, false);
     var person = transactionPerson == null
       ? null
       : await GetPerson(transactionPerson.PersonId, false);
+    var transactionCategories = await GetTransactionCategories(transaction.Id, false);
+    var categories = await GetCategories(transactionCategories, false);
 
     return new GetTransactionResponse
     {
       Transaction = transaction,
       TransactionPerson = transactionPerson,
-      Person = person
+      Person = person,
+      TransactionCategories = transactionCategories,
+      Categories = categories
     };
   }
 
@@ -59,7 +65,7 @@ public class TransactionService(DatabaseContext context)
   }
 
   // TODO: refactor to use one sql query 
-  public async Task<ListTransactionResponse> ListWithTransactionPerson(ListTransactionRequest request)
+  public async Task<ListTransactionResponse> ListWithAssignments(ListTransactionRequest request)
   {
     var withDeleted = request.WithDeleted;
     var query = _context.Transactions
@@ -93,6 +99,15 @@ public class TransactionService(DatabaseContext context)
             (withDeleted || person.Deleted_at == null) &&
             EF.Functions.ILike(person.Name, searchPattern, "\\")
           )
+        ) ||
+        _context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          (withDeleted || transactionCategory.Deleted_at == null) &&
+          _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            (withDeleted || category.Deleted_at == null) &&
+            EF.Functions.ILike(category.Title, searchPattern, "\\")
+          )
         )
       );
     }
@@ -119,6 +134,36 @@ public class TransactionService(DatabaseContext context)
         !_context.TransactionsPerson.Any(transactionPerson =>
           transactionPerson.TransactionId == transaction.Id &&
           transactionPerson.Deleted_at == null
+        )
+      );
+    }
+
+    if (request.CategoryId.HasValue)
+    {
+      var categoryId = request.CategoryId.Value;
+
+      query = query.Where(transaction =>
+        _context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          transactionCategory.CategoryId == categoryId &&
+          (withDeleted || _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            category.Deleted_at == null
+          ))
+        )
+      );
+    }
+    else if (request.Uncategorized)
+    {
+      query = query.Where(transaction =>
+        !_context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            (withDeleted || category.Deleted_at == null)
+          )
         )
       );
     }
@@ -165,6 +210,30 @@ public class TransactionService(DatabaseContext context)
 
     var personById = persons.ToDictionary(person => person.Id);
 
+    var transactionCategories = await _context.TransactionsCategory
+      .Where(transactionCategory =>
+        transactionIds.Contains(transactionCategory.TransactionId) &&
+        (withDeleted || transactionCategory.Deleted_at == null)
+      )
+      .OrderBy(transactionCategory => transactionCategory.Deleted_at == null ? 0 : 1)
+      .ThenBy(transactionCategory => transactionCategory.Created_at)
+      .ToListAsync();
+
+    var transactionCategoriesByTransactionId = transactionCategories
+      .GroupBy(transactionCategory => transactionCategory.TransactionId)
+      .ToDictionary(group => group.Key, group => group.ToList());
+    var categoryIds = transactionCategories
+      .Select(transactionCategory => transactionCategory.CategoryId)
+      .Distinct()
+      .ToList();
+    var categories = await _context.Categories
+      .Where(category =>
+        categoryIds.Contains(category.Id) &&
+        (withDeleted || category.Deleted_at == null)
+      )
+      .ToListAsync();
+    var categoryById = categories.ToDictionary(category => category.Id);
+
     return new ListTransactionResponse
     {
       Transactions = transactions.Select(transaction => new GetTransactionResponse
@@ -174,6 +243,12 @@ public class TransactionService(DatabaseContext context)
         Person = GetPersonFromTransactionPerson(
           transactionPersonByTransactionId.GetValueOrDefault(transaction.Id),
           personById
+        ),
+        TransactionCategories = transactionCategoriesByTransactionId
+          .GetValueOrDefault(transaction.Id, []),
+        Categories = GetCategoriesFromTransactionCategories(
+          transactionCategoriesByTransactionId.GetValueOrDefault(transaction.Id, []),
+          categoryById
         )
       }).ToList(),
       Page = request.Page,
@@ -246,6 +321,41 @@ public class TransactionService(DatabaseContext context)
     );
   }
 
+  private async Task<List<TransactionCategoryModel>> GetTransactionCategories(
+    Guid transactionId,
+    bool withDeleted
+  )
+  {
+    return await _context.TransactionsCategory
+      .Where(transactionCategory =>
+        transactionCategory.TransactionId == transactionId &&
+        (withDeleted || transactionCategory.Deleted_at == null)
+      )
+      .OrderBy(transactionCategory => transactionCategory.Deleted_at == null ? 0 : 1)
+      .ThenBy(transactionCategory => transactionCategory.Created_at)
+      .ToListAsync();
+  }
+
+  private async Task<List<CategoryModel>> GetCategories(
+    List<TransactionCategoryModel> transactionCategories,
+    bool withDeleted
+  )
+  {
+    var categoryIds = transactionCategories
+      .Select(transactionCategory => transactionCategory.CategoryId)
+      .Distinct()
+      .ToList();
+
+    return await _context.Categories
+      .Where(category =>
+        categoryIds.Contains(category.Id) &&
+        (withDeleted || category.Deleted_at == null)
+      )
+      .OrderBy(category => category.Title)
+      .ThenBy(category => category.Id)
+      .ToListAsync();
+  }
+
   private static PersonModel? GetPersonFromTransactionPerson(
     TransactionPersonModel? transactionPerson,
     Dictionary<Guid, PersonModel> personById
@@ -254,6 +364,20 @@ public class TransactionService(DatabaseContext context)
     return transactionPerson == null
       ? null
       : personById.GetValueOrDefault(transactionPerson.PersonId);
+  }
+
+  private static List<CategoryModel> GetCategoriesFromTransactionCategories(
+    List<TransactionCategoryModel> transactionCategories,
+    Dictionary<Guid, CategoryModel> categoryById
+  )
+  {
+    return transactionCategories
+      .Select(transactionCategory => categoryById.GetValueOrDefault(transactionCategory.CategoryId))
+      .Where(category => category != null)
+      .DistinctBy(category => category!.Id)
+      .OrderBy(category => category!.Title)
+      .Select(category => category!)
+      .ToList();
   }
 
   private static string EscapeLikePattern(string value)

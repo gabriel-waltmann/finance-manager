@@ -29,7 +29,7 @@ public class ListTransactionController(
                 : request.Search.Trim();
             request.Order = request.Order.Trim().ToLowerInvariant();
 
-            var response = await _service.ListWithTransactionPerson(request);
+            var response = await _service.ListWithAssignments(request);
             
             return StatusCode(200, response);
         }

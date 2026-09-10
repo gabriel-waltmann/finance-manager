@@ -15,10 +15,13 @@ import type {
 } from '../../components/tables/types'
 import { displayAmount, displayDate, inputDate, todayInputDate } from '../../lib/format'
 import { usePersonOptionsQuery } from '../../queries/PersonQueries'
+import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
 import {
   useAssignmentMutation,
+  useCategoryAssignmentMutation,
   useDeleteTransactionMutation,
   usePendingAssignmentIds,
+  usePendingCategoryAssignmentIds,
   useSaveTransactionMutation,
   useTransactionsQuery,
   type TransactionQueryParams,
@@ -26,16 +29,18 @@ import {
 import { useToast } from '../../stores/toast'
 import type {
   TransactionPayload,
-  TransactionWithPerson,
+  TransactionWithAssignments,
 } from '../../entities/TransactionEntity'
 import TransactionActionsCell from './components/TransactionActionsCell.vue'
 import TransactionPersonCell from './components/TransactionPersonCell.vue'
+import TransactionCategoryCell from './components/TransactionCategoryCell.vue'
 
 const tableHeaders: DataTableHeader[] = [
   { key: 'date', label: 'Date', class: 'whitespace-nowrap' },
   { key: 'title', label: 'Title', class: 'min-w-64' },
   { key: 'amount', label: 'Amount', align: 'right', class: 'whitespace-nowrap' },
   { key: 'person', label: 'Person', class: 'min-w-56' },
+  { key: 'categories', label: 'Categories', class: 'min-w-72' },
   { key: 'actions', label: 'Actions', align: 'right', class: 'w-40' },
 ]
 
@@ -43,8 +48,8 @@ export function useController() {
   const toast = useToast()
 
   const formOpen = ref(false)
-  const editing = ref<TransactionWithPerson | null>(null)
-  const deleteTarget = ref<TransactionWithPerson | null>(null)
+  const editing = ref<TransactionWithAssignments | null>(null)
+  const deleteTarget = ref<TransactionWithAssignments | null>(null)
   const debouncedSearch = ref('')
 
   const filters = reactive({
@@ -52,6 +57,7 @@ export function useController() {
     startDate: '',
     endDate: '',
     personFilter: '',
+    categoryFilter: '',
     order: 'desc' as 'asc' | 'desc',
   })
 
@@ -60,6 +66,7 @@ export function useController() {
     title: '',
     amount: '',
     personId: '',
+    categoryIds: [] as string[],
   })
 
   let searchDebounce: ReturnType<typeof window.setTimeout> | undefined
@@ -72,6 +79,10 @@ export function useController() {
       ? filters.personFilter
       : undefined,
     unassigned: filters.personFilter === 'unassigned' ? true : undefined,
+    categoryId: filters.categoryFilter && filters.categoryFilter !== 'uncategorized'
+      ? filters.categoryFilter
+      : undefined,
+    uncategorized: filters.categoryFilter === 'uncategorized' ? true : undefined,
     order: filters.order,
   }))
 
@@ -79,6 +90,7 @@ export function useController() {
     transactionParams,
   )
   const personOptionsQuery = usePersonOptionsQuery()
+  const categoryOptionsQuery = useCategoryOptionsQuery()
 
   const pages = computed(() => transactionQuery.data.value?.pages ?? [])
   const transactions = computed(() => pages.value.flatMap((page) => page.transactions))
@@ -88,11 +100,13 @@ export function useController() {
   ))
   const firstPage = computed(() => pages.value[0])
   const persons = computed(() => personOptionsQuery.data.value ?? [])
+  const categories = computed(() => categoryOptionsQuery.data.value ?? [])
   const loading = computed(() => transactionQuery.isPending.value)
   const loadingMore = computed(() => transactionQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => transactionQuery.isFetchNextPageError.value)
   const transactionError = computed(() => readError(transactionQuery.error.value))
   const personError = computed(() => readError(personOptionsQuery.error.value))
+  const categoryError = computed(() => readError(categoryOptionsQuery.error.value))
   const totalRows = computed(() => firstPage.value?.total ?? 0)
 
   const hasNextPage = computed(() => transactionQuery.hasNextPage.value)
@@ -121,7 +135,17 @@ export function useController() {
     },
   })
 
+  const categoryAssignmentMutation = useCategoryAssignmentMutation(transactionQueryKey, {
+    onSuccess: (variables) => {
+      toast.success(variables.nextCategoryIds.length > 0
+        ? 'Categories updated'
+        : 'Categories cleared')
+    },
+    onError: (error) => toast.error(readError(error)),
+  })
+
   const pendingAssignmentIds = usePendingAssignmentIds()
+  const pendingCategoryAssignmentIds = usePendingCategoryAssignmentIds()
 
   const deleteTransactionMutation = useDeleteTransactionMutation(transactionQueryKey, {
     onSuccess: () => {
@@ -137,6 +161,9 @@ export function useController() {
   const deleting = computed(() => deleteTransactionMutation.isPending.value)
   const assignmentSaving = computed<Record<string, boolean>>(() => Object.fromEntries(
     pendingAssignmentIds.value.map((transactionId) => [transactionId, true]),
+  ))
+  const categoryAssignmentSaving = computed<Record<string, boolean>>(() => Object.fromEntries(
+    pendingCategoryAssignmentIds.value.map((transactionId) => [transactionId, true]),
   ))
   const tableRows = computed<DataTableRow[]>(() =>
     transactions.value.map((item) => ({
@@ -164,6 +191,15 @@ export function useController() {
             persons: persons.value,
             personId: item.person?.id ?? '',
             onChange: (event: Event) => changeAssignment(item, event),
+          },
+        },
+        {
+          component: TransactionCategoryCell,
+          props: {
+            categories: categories.value,
+            categoryIds: item.categories.map((category) => category.id),
+            disabled: Boolean(categoryAssignmentSaving.value[item.transaction.id]),
+            onChange: (categoryIds: string[]) => changeCategoryAssignment(item, categoryIds),
           },
         },
         {
@@ -247,6 +283,13 @@ export function useController() {
     },
   )
 
+  watch(
+    () => categoryOptionsQuery.error.value,
+    (queryError) => {
+      if (queryError) toast.error(readError(queryError))
+    },
+  )
+
   onMounted(() => {
     loadMoreObserver = new IntersectionObserver(
       ([entry]) => {
@@ -270,6 +313,7 @@ export function useController() {
     void Promise.all([
       transactionQuery.refetch(),
       personOptionsQuery.refetch(),
+      categoryOptionsQuery.refetch(),
     ])
   }
 
@@ -296,15 +340,17 @@ export function useController() {
     form.title = ''
     form.amount = ''
     form.personId = ''
+    form.categoryIds = []
     formOpen.value = true
   }
 
-  function openEditForm(item: TransactionWithPerson) {
+  function openEditForm(item: TransactionWithAssignments) {
     editing.value = item
     form.date = inputDate(item.transaction.date)
     form.title = item.transaction.title
     form.amount = String(item.transaction.amount)
     form.personId = item.person?.id ?? ''
+    form.categoryIds = item.categories.map((category) => category.id)
     formOpen.value = true
   }
 
@@ -325,10 +371,11 @@ export function useController() {
       editing: editing.value,
       payload,
       personId: form.personId,
+      categoryIds: [...form.categoryIds],
     })
   }
 
-  function changeAssignment(item: TransactionWithPerson, event: Event) {
+  function changeAssignment(item: TransactionWithAssignments, event: Event) {
     const select = event.target as HTMLSelectElement
     const previousPersonId = item.person?.id ?? ''
     const nextPersonId = select.value
@@ -340,7 +387,16 @@ export function useController() {
     assignmentMutation.mutate({ item, nextPersonId, previousPersonId, select })
   }
 
-  function confirmDelete(item: TransactionWithPerson) {
+  function changeCategoryAssignment(item: TransactionWithAssignments, categoryIds: string[]) {
+    const currentIds = item.categories.map((category) => category.id).sort()
+    const nextIds = [...categoryIds].sort()
+    if (currentIds.length === nextIds.length &&
+      currentIds.every((categoryId, index) => categoryId === nextIds[index])) return
+
+    categoryAssignmentMutation.mutate({ item, nextCategoryIds: categoryIds })
+  }
+
+  function confirmDelete(item: TransactionWithAssignments) {
     deleteTarget.value = item
   }
 
@@ -360,6 +416,8 @@ export function useController() {
 
   return {
     cancelDelete,
+    categories,
+    categoryError,
     closeForm,
     deleteTarget,
     deleting,

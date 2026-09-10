@@ -24,7 +24,7 @@ public class GetTransactionController(
     {
         try
         {
-            var transaction = await _service.GetWithTransactionPerson(route.Id);
+            var transaction = await _service.GetWithAssignments(route.Id);
             
             return StatusCode(200, transaction);
         }

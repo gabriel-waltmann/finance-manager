@@ -6,7 +6,8 @@
 
 ## Feature implementation
 
-- [Person](./features/people.md): person storage, CRUD endpoints, validation, soft deletion, and transaction assignment.
+- [Person](./features/person.md): person storage, CRUD endpoints, validation, soft deletion, and transaction assignment.
+- [Categories](./features/category.md): category CRUD, validation, soft deletion, and multi-category transaction assignment.
 - [Transactions](./features/transactions.md): transaction storage, CRUD endpoints, filtering, duplicate detection, and person data in responses.
 - [File processing and import status](./features/file-processing.md): file persistence, RabbitMQ processing, CSV mappings, import statuses, and live client updates.
 

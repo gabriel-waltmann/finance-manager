@@ -8,14 +8,16 @@ import {
 } from '@tanstack/vue-query'
 import { TransactionController } from '../controllers/TransactionController'
 import { TransactionPersonController } from '../controllers/TransactionPersonController'
+import { TransactionCategoryController } from '../controllers/TransactionCategoryController'
 import type { PersonEntity } from '../entities/PersonEntity'
 import type {
   ListTransactionParams,
   ListTransactionResponse,
   TransactionPayload,
-  TransactionWithPerson,
+  TransactionWithAssignments,
 } from '../entities/TransactionEntity'
 import type { TransactionPersonEntity } from '../entities/TransactionPersonEntity'
+import type { SetTransactionCategoriesResponse } from '../entities/TransactionCategoryEntity'
 import { financeKeys } from './queryKeys'
 
 type TransactionQueryKey = ReturnType<typeof financeKeys.transactionList>
@@ -25,16 +27,22 @@ export type TransactionQueryParams = Omit<ListTransactionParams, 'limit' | 'page
 export const TRANSACTION_PAGE_SIZE = 20
 
 export interface SaveTransactionVariables {
-  editing: TransactionWithPerson | null
+  editing: TransactionWithAssignments | null
   payload: TransactionPayload
   personId: string
+  categoryIds: string[]
 }
 
 export interface AssignmentVariables {
-  item: TransactionWithPerson
+  item: TransactionWithAssignments
   nextPersonId: string
   previousPersonId: string
   select: HTMLSelectElement
+}
+
+export interface CategoryAssignmentVariables {
+  item: TransactionWithAssignments
+  nextCategoryIds: string[]
 }
 
 interface SaveTransactionMutationOptions {
@@ -45,6 +53,11 @@ interface SaveTransactionMutationOptions {
 interface AssignmentMutationOptions {
   onSuccess?: (variables: AssignmentVariables) => void
   onError?: (error: Error, variables: AssignmentVariables) => void
+}
+
+interface CategoryAssignmentMutationOptions {
+  onSuccess?: (variables: CategoryAssignmentVariables) => void
+  onError?: (error: Error, variables: CategoryAssignmentVariables) => void
 }
 
 interface DeleteTransactionMutationOptions {
@@ -81,6 +94,9 @@ export function useSaveTransactionMutation(options: SaveTransactionMutationOptio
       if (variables.editing) {
         await TransactionController.update(variables.editing.transaction.id, variables.payload)
         await persistAssignment(variables.editing, variables.personId)
+        await TransactionCategoryController.set(variables.editing.transaction.id, {
+          categoryIds: variables.categoryIds,
+        })
         return
       }
 
@@ -90,6 +106,12 @@ export function useSaveTransactionMutation(options: SaveTransactionMutationOptio
         await TransactionPersonController.create({
           personId: variables.personId,
           transactionId: transaction.id,
+        })
+      }
+
+      if (variables.categoryIds.length > 0) {
+        await TransactionCategoryController.set(transaction.id, {
+          categoryIds: variables.categoryIds,
         })
       }
     },
@@ -148,6 +170,45 @@ export function usePendingAssignmentIds() {
   })
 }
 
+export function useCategoryAssignmentMutation(
+  transactionQueryKey: ComputedRef<TransactionQueryKey>,
+  options: CategoryAssignmentMutationOptions = {},
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationKey: financeKeys.categoryAssignmentMutations(),
+    mutationFn: ({ item, nextCategoryIds }: CategoryAssignmentVariables) => (
+      TransactionCategoryController.set(item.transaction.id, { categoryIds: nextCategoryIds })
+    ),
+    onSuccess: (response, variables) => {
+      updateTransactionCategories(
+        queryClient,
+        transactionQueryKey.value,
+        variables.item.transaction.id,
+        response,
+      )
+      options.onSuccess?.(variables)
+    },
+    onError: (error, variables) => options.onError?.(error, variables),
+    onSettled: async () => {
+      await queryClient.invalidateQueries({ queryKey: financeKeys.transactions() })
+    },
+  })
+}
+
+export function usePendingCategoryAssignmentIds() {
+  return useMutationState<string>({
+    filters: {
+      mutationKey: financeKeys.categoryAssignmentMutations(),
+      status: 'pending',
+    },
+    select: (mutation) => (
+      mutation.state.variables as CategoryAssignmentVariables
+    ).item.transaction.id,
+  })
+}
+
 export function useDeleteTransactionMutation(
   transactionQueryKey: ComputedRef<TransactionQueryKey>,
   options: DeleteTransactionMutationOptions = {},
@@ -170,7 +231,7 @@ export function useDeleteTransactionMutation(
 }
 
 async function persistAssignment(
-  item: TransactionWithPerson,
+  item: TransactionWithAssignments,
   nextPersonId: string,
 ): Promise<TransactionPersonEntity | null> {
   const transactionId = item.transaction.id
@@ -208,6 +269,33 @@ async function persistAssignment(
   }
 
   return null
+}
+
+function updateTransactionCategories(
+  queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: TransactionQueryKey,
+  transactionId: string,
+  response: SetTransactionCategoriesResponse,
+) {
+  queryClient.setQueryData<InfiniteData<ListTransactionResponse>>(queryKey, (data) => (
+    data
+      ? {
+          ...data,
+          pages: data.pages.map((page) => ({
+            ...page,
+            transactions: page.transactions.map((item) =>
+              item.transaction.id === transactionId
+                ? {
+                    ...item,
+                    transactionCategories: response.transactionCategories,
+                    categories: response.categories,
+                  }
+                : item,
+            ),
+          })),
+        }
+      : data
+  ))
 }
 
 function updateTransactionAssignment(

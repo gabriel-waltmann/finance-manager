@@ -1,10 +1,14 @@
 import type { DashboardParams } from '../entities/Dashboard'
+import type { ListCategoryParams } from '../entities/CategoryEntity'
 import type { ListPersonParams } from '../entities/PersonEntity'
 import type { ListTransactionParams } from '../entities/TransactionEntity'
 import type { ListTransactionImportParams } from '../entities/TransactionImportEntity'
 
 export const financeKeys = {
   all: ['finance'] as const,
+  category: () => [...financeKeys.all, 'category'] as const,
+  categoryOptions: () => [...financeKeys.category(), 'options'] as const,
+  categoryList: (params: ListCategoryParams) => [...financeKeys.category(), 'list', params] as const,
   person: () => [...financeKeys.all, 'person'] as const,
   personOptions: () => [...financeKeys.person(), 'options'] as const,
   personList: (params: ListPersonParams) => [...financeKeys.person(), 'list', params] as const,
@@ -15,4 +19,5 @@ export const financeKeys = {
   imports: () => [...financeKeys.all, 'transaction-imports'] as const,
   importList: (params: ListTransactionImportParams) => [...financeKeys.imports(), params] as const,
   assignmentMutations: () => [...financeKeys.all, 'assignment-mutation'] as const,
+  categoryAssignmentMutations: () => [...financeKeys.all, 'category-assignment-mutation'] as const,
 }

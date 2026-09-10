@@ -22,7 +22,7 @@ namespace api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("api.Models.File.FileModel", b =>
+            modelBuilder.Entity("api.Models.Category.CategoryModel", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -33,14 +33,51 @@ namespace api.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<byte[]>("Data")
+                    b.Property<DateTime?>("Deleted_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text")
+                        .HasColumnName("description");
+
+                    b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("bytea")
-                        .HasColumnName("data");
+                        .HasColumnType("text")
+                        .HasColumnName("title");
+
+                    b.Property<DateTime?>("Updated_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Title")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("categories");
+                });
+
+            modelBuilder.Entity("api.Models.File.FileModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
 
                     b.Property<int>("Category")
                         .HasColumnType("integer")
                         .HasColumnName("category");
+
+                    b.Property<DateTime>("Created_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<byte[]>("Data")
+                        .IsRequired()
+                        .HasColumnType("bytea")
+                        .HasColumnName("data");
 
                     b.Property<DateTime?>("Deleted_at")
                         .HasColumnType("timestamp without time zone")
@@ -176,6 +213,44 @@ namespace api.Migrations
                     b.ToTable("transactions");
                 });
 
+            modelBuilder.Entity("api.Models.TransactionCategory.TransactionCategoryModel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTime>("Created_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime?>("Deleted_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("deleted_at");
+
+                    b.Property<Guid>("TransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("transaction_id");
+
+                    b.Property<DateTime?>("Updated_at")
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("TransactionId", "CategoryId")
+                        .IsUnique()
+                        .HasFilter("deleted_at IS NULL");
+
+                    b.ToTable("transactions_category");
+                });
+
             modelBuilder.Entity("api.Models.TransactionImport.TransactionImportModel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -244,6 +319,21 @@ namespace api.Migrations
                         .HasFilter("deleted_at IS NULL");
 
                     b.ToTable("transactions_person");
+                });
+
+            modelBuilder.Entity("api.Models.TransactionCategory.TransactionCategoryModel", b =>
+                {
+                    b.HasOne("api.Models.Category.CategoryModel", null)
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("api.Models.Transaction.TransactionModel", null)
+                        .WithMany()
+                        .HasForeignKey("TransactionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("api.Models.TransactionPerson.TransactionPersonModel", b =>

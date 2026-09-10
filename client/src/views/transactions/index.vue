@@ -11,6 +11,8 @@ import { useController } from './useController'
 
 const {
   cancelDelete,
+  categories,
+  categoryError,
   closeForm,
   deleteTarget,
   deleting,
@@ -52,8 +54,10 @@ const {
       v-model:start-date="filters.startDate"
       v-model:end-date="filters.endDate"
       v-model:person-filter="filters.personFilter"
+      v-model:category-filter="filters.categoryFilter"
       v-model:order="filters.order"
       :persons="persons"
+      :categories="categories"
     />
 
     <TransactionTotalCard
@@ -63,6 +67,7 @@ const {
     />
 
     <ErrorAlert v-if="personError" :message="personError" />
+    <ErrorAlert v-if="categoryError" :message="categoryError" />
 
     <DataTable
       :headers="tableHeaders"
@@ -87,9 +92,11 @@ const {
     v-model:title="form.title"
     v-model:amount="form.amount"
     v-model:person-id="form.personId"
+    v-model:category-ids="form.categoryIds"
     :editing="editing !== null"
     :open="formOpen"
     :persons="persons"
+    :categories="categories"
     :saving="saving"
     @close="closeForm"
     @submit="submitForm"

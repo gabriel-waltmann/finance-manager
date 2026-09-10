@@ -19,6 +19,8 @@ public class FilterRequestValidatorTests
       Search = new string('s', 201),
       PersonId = Guid.NewGuid(),
       Unassigned = true,
+      CategoryId = Guid.NewGuid(),
+      Uncategorized = true,
       StartDate = new DateTime(2026, 2, 2),
       EndDate = new DateTime(2026, 2, 1)
     };
@@ -30,6 +32,7 @@ public class FilterRequestValidatorTests
     result.ShouldHaveValidationErrorFor(item => item.Order);
     result.ShouldHaveValidationErrorFor(item => item.Search);
     Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("cannot be used together"));
+    Assert.Equal(2, result.Errors.Count(error => error.ErrorMessage.Contains("cannot be used together")));
     Assert.Contains(result.Errors, error => error.ErrorMessage.Contains("Start date"));
   }
 

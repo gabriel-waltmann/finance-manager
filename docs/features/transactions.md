@@ -22,8 +22,8 @@ The API treats an active row with the same `date`, `title`, and `amount` as a du
 
 | Method | Route | Behavior |
 | --- | --- | --- |
-| `GET` | `/transactions` | Returns a filtered, ordered, paginated list with person-assignment data. |
-| `GET` | `/transaction/{id}` | Returns one active transaction with its active assignment and person, or `404`. |
+| `GET` | `/transactions` | Returns a filtered, ordered, paginated list with person and category assignments. |
+| `GET` | `/transaction/{id}` | Returns one active transaction with its person and category assignments, or `404`. |
 | `POST` | `/transaction` | Creates a transaction and returns it with `201`; an active duplicate returns `409`. |
 | `PUT` | `/transaction/{id}` | Replaces `date`, `title`, and `amount`, and sets `updated_at`. |
 | `DELETE` | `/transaction/{id}` | Sets `deleted_at` and returns `200`. A missing record also returns `200`. |
@@ -52,6 +52,8 @@ The date must not be the default .NET value, the title must be nonblank and at m
 | `endDate` | Inclusive calendar-day upper boundary, implemented as less than the next day. |
 | `personId` | Only transactions actively assigned to this person. |
 | `unassigned` | Only transactions without an active assignment. It cannot be combined with `personId`. |
+| `categoryId` | Only transactions containing this visible category. |
+| `uncategorized` | Only transactions without visible active categories. It cannot be combined with `categoryId`. |
 | `page` | One-based page number; default `1`. |
 | `limit` | Page size from 1 to 100; default `20`. |
 | `order` | `asc` or `desc` by transaction date, then creation time; default `desc`. |
@@ -59,7 +61,7 @@ The date must not be the default .NET value, the title must be nonblank and at m
 
 The service counts the filtered query before applying `Skip` and `Take`, so the response contains `page`, `limit`, `total`, and `totalPages` alongside `transactions`.
 
-Each list item and the single-transaction endpoint return this structure:
+Search matches transaction titles, assigned person names, and visible category titles. Each list item and the single-transaction endpoint return this structure:
 
 ```json
 {
@@ -73,11 +75,13 @@ Each list item and the single-transaction endpoint return this structure:
     "deleted_at": null
   },
   "transactionPerson": null,
-  "person": null
+  "person": null,
+  "transactionCategories": [],
+  "categories": []
 }
 ```
 
-When an assignment exists, `transactionPerson` contains the link and `person` contains the related person. The list implementation loads the page of transactions first, then fetches assignments and people for only those transaction IDs.
+When assignments exist, the response contains the person link/person and arrays of transaction-category links/visible categories. Links to soft-deleted categories remain in `transactionCategories`, but deleted categories are omitted from `categories`. The list implementation loads the transaction page first and then fetches related records for those transaction IDs.
 
 ## Soft deletion and current behavior
 

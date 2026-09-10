@@ -8,6 +8,7 @@ const navItems = [
   { to: '/transactions', label: 'Transactions' },
   { to: '/imports', label: 'Imports' },
   { to: '/person', label: 'Person' },
+  { to: '/category', label: 'Categories' },
 ] as const
 </script>
 
@@ -21,7 +22,7 @@ const navItems = [
           </div>
           <div>
             <p class="text-lg font-semibold text-stone-950">Finance Manager</p>
-            <p class="text-sm text-stone-500">Transactions and person assignments</p>
+            <p class="text-sm text-stone-500">Transactions, people, and categories</p>
           </div>
         </div>
 
