@@ -23,5 +23,20 @@ public class UpladTransactionRequestValidator : AbstractValidator<UpladTransacti
       .NotNull()
       .IsInEnum()
       .WithMessage("Category must be CreditCard or Extrato.");
+
+    RuleFor(request => request.PersonId)
+      .NotEqual(Guid.Empty)
+      .When(request => request.PersonId.HasValue)
+      .WithMessage("PersonId must be a non-empty GUID.");
+
+    RuleFor(request => request.CategoryIds)
+      .Cascade(CascadeMode.Stop)
+      .NotNull()
+      .Must(categoryIds => categoryIds.Count == categoryIds.Distinct().Count())
+      .WithMessage("CategoryIds must not contain duplicates.");
+
+    RuleForEach(request => request.CategoryIds)
+      .NotEqual(Guid.Empty)
+      .WithMessage("CategoryIds must contain only non-empty GUIDs.");
   }
 }

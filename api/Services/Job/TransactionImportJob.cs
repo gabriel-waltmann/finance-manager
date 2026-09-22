@@ -134,6 +134,13 @@ public class TransactionImportJob(
 
       var file = await fileService.Get(payload.FileId);
       var requests = MapTransactionRequests(file.Category, file.Data);
+      var categoryIds = payload.CategoryIds ?? [];
+
+      await transactionImportService.ValidateAssignments(
+        payload.PersonId,
+        categoryIds,
+        cancellationToken
+      );
 
       await using var importTransaction = await context.Database.BeginTransactionAsync(cancellationToken);
 
@@ -145,7 +152,13 @@ public class TransactionImportJob(
         {
           var transaction = await transactionService.Create(request);
 
-          await transactionImportService.Create(payload.FileProcessingId, transaction.Id, cancellationToken);
+          await transactionImportService.Create(
+            payload.FileProcessingId,
+            transaction.Id,
+            payload.PersonId,
+            categoryIds,
+            cancellationToken
+          );
         }
         catch (ExistsTransactionException)
         {

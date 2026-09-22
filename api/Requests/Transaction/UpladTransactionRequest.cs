@@ -6,4 +6,6 @@ public class UpladTransactionRequest
 {
   public required IFormFile File { get; set; }
   public FileCategoryName? Category { get; set; }
+  public Guid? PersonId { get; set; }
+  public List<Guid> CategoryIds { get; set; } = [];
 }

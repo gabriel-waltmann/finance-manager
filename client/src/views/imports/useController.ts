@@ -19,6 +19,8 @@ import type {
   TransactionImportEntity,
 } from '../../entities/TransactionImportEntity'
 import { displayDateTime } from '../../lib/format'
+import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
+import { usePersonOptionsQuery } from '../../queries/PersonQueries'
 import {
   openTransactionImportEventStream,
   useTransactionImportCache,
@@ -41,9 +43,16 @@ const tableHeaders: DataTableHeader[] = [
 export function useController() {
   const toast = useToast()
 
-  const uploadCategory = ref<FileCategory>('CreditCard')
+  const uploadOpen = ref(false)
   const connectionState = ref<'connecting' | 'live' | 'reconnecting'>('connecting')
   const debouncedSearch = ref('')
+
+  const uploadForm = reactive({
+    category: '' as '' | FileCategory,
+    categoryIds: [] as string[],
+    file: null as File | null,
+    personId: '',
+  })
 
   const filters = reactive({
     search: '',
@@ -62,28 +71,34 @@ export function useController() {
   }))
 
   const { query: importsQuery } = useTransactionImportsQuery(importParams)
+  const personOptionsQuery = usePersonOptionsQuery()
+  const categoryOptionsQuery = useCategoryOptionsQuery()
   const importCache = useTransactionImportCache()
 
   const uploadMutation = useUploadTransactionMutation({
     onSuccess: () => {
       toast.success('Import submitted')
+      uploadOpen.value = false
+      resetUploadForm()
     },
     onError: (error) => {
       toast.error(readError(error))
-    },
-    onSettled: (variables) => {
-      variables.input.value = ''
     },
   })
 
   const pages = computed(() => importsQuery.data.value?.pages ?? [])
   const imports = computed(() => pages.value.flatMap((page) => page.imports))
+  const persons = computed(() => personOptionsQuery.data.value ?? [])
+  const categories = computed(() => categoryOptionsQuery.data.value ?? [])
   const firstPage = computed(() => pages.value[0])
   const loading = computed(() => importsQuery.isPending.value)
   const loadingMore = computed(() => importsQuery.isFetchingNextPage.value)
   const loadMoreFailed = computed(() => importsQuery.isFetchNextPageError.value)
   const error = computed(() => readError(importsQuery.error.value))
   const uploadPending = computed(() => uploadMutation.isPending.value)
+  const uploadOptionsLoading = computed(() => (
+    personOptionsQuery.isPending.value || categoryOptionsQuery.isPending.value
+  ))
   const totalRows = computed(() => firstPage.value?.total ?? 0)
   const hasNextPage = computed(() => importsQuery.hasNextPage.value)
   const loadProgress = computed(() => `${imports.value.length} of ${totalRows.value}`)
@@ -183,6 +198,20 @@ export function useController() {
     },
   )
 
+  watch(
+    () => personOptionsQuery.error.value,
+    (queryError) => {
+      if (queryError) toast.error(readError(queryError))
+    },
+  )
+
+  watch(
+    () => categoryOptionsQuery.error.value,
+    (queryError) => {
+      if (queryError) toast.error(readError(queryError))
+    },
+  )
+
   onMounted(() => {
     loadMoreObserver = new IntersectionObserver(
       ([entry]) => {
@@ -219,7 +248,11 @@ export function useController() {
   })
 
   function loadData() {
-    void importsQuery.refetch()
+    void Promise.all([
+      importsQuery.refetch(),
+      personOptionsQuery.refetch(),
+      categoryOptionsQuery.refetch(),
+    ])
   }
 
   function loadNextPage() {
@@ -232,19 +265,37 @@ export function useController() {
     loadMoreTarget.value = target instanceof HTMLElement ? target : null
   }
 
-  function uploadFile(event: Event) {
-    const input = event.target as HTMLInputElement
-    const file = input.files?.[0]
+  function openUpload() {
+    resetUploadForm()
+    uploadOpen.value = true
+  }
 
-    if (!file) {
+  function closeUpload() {
+    if (!uploadPending.value) {
+      uploadOpen.value = false
+    }
+  }
+
+  function uploadFile() {
+    if (!uploadForm.file || !uploadForm.category) {
       return
     }
 
     uploadMutation.mutate({
-      file,
-      category: uploadCategory.value,
-      input,
+      payload: {
+        file: uploadForm.file,
+        category: uploadForm.category,
+        personId: uploadForm.personId || undefined,
+        categoryIds: [...uploadForm.categoryIds],
+      },
     })
+  }
+
+  function resetUploadForm() {
+    uploadForm.category = ''
+    uploadForm.categoryIds = []
+    uploadForm.file = null
+    uploadForm.personId = ''
   }
 
   function applyStatusUpdate(transactionImport: TransactionImportEntity) {
@@ -267,6 +318,8 @@ export function useController() {
   }
 
   return {
+    categories,
+    closeUpload,
     connectionState,
     error,
     filters,
@@ -277,11 +330,15 @@ export function useController() {
     loadProgress,
     loading,
     loadingMore,
+    openUpload,
+    persons,
     setLoadMoreTarget,
     tableHeaders,
     tableRows,
-    uploadCategory,
+    uploadForm,
     uploadFile,
+    uploadOpen,
+    uploadOptionsLoading,
     uploadPending,
   }
 }

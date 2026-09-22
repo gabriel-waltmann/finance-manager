@@ -1,26 +1,15 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import FilledButton from '../../../components/buttons/FilledButton.vue'
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import type { FileCategory } from '../../../entities/TransactionImportEntity'
 
 const props = defineProps<{
   connectionState: 'connecting' | 'live' | 'reconnecting'
   uploadPending: boolean
 }>()
 
-const uploadCategory = defineModel<FileCategory>('uploadCategory', { required: true })
-
 defineEmits<{
-  upload: [event: Event]
+  openUpload: []
 }>()
-
-const fileInput = ref<HTMLInputElement | null>(null)
-
-const categoryOptions = [
-  { label: 'Credit card', value: 'CreditCard' },
-  { label: 'Extrato', value: 'Extrato' },
-]
 
 const connectionLabel = computed(() => {
   switch (props.connectionState) {
@@ -32,10 +21,6 @@ const connectionLabel = computed(() => {
       return 'Reconnecting'
   }
 })
-
-function chooseFile() {
-  fileInput.value?.click()
-}
 </script>
 
 <template>
@@ -52,26 +37,9 @@ function chooseFile() {
     {{ connectionLabel }}
   </div>
 
-  <SelectInput
-    v-model="uploadCategory"
-    class="min-w-36"
-    label="Import category"
-    :options="categoryOptions"
-    :disabled="uploadPending"
-    hide-label
-  />
-
-  <input
-    ref="fileInput"
-    class="hidden"
-    type="file"
-    accept=".csv,text/csv"
-    @change="$emit('upload', $event)"
-  />
-
   <FilledButton
     :text="uploadPending ? 'Uploading...' : 'Upload CSV'"
     :disabled="uploadPending"
-    @click="chooseFile"
+    @click="$emit('openUpload')"
   />
 </template>

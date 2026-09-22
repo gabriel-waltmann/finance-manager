@@ -51,6 +51,41 @@ public class UploadTransactionRequestValidatorTests
     result.ShouldHaveValidationErrorFor(item => item.File);
   }
 
+  [Fact]
+  public void Upload_accepts_optional_person_and_multiple_categories()
+  {
+    var request = new UpladTransactionRequest
+    {
+      File = CreateFile([1], "transactions.csv"),
+      Category = FileCategoryName.Extrato,
+      PersonId = Guid.NewGuid(),
+      CategoryIds = [Guid.NewGuid(), Guid.NewGuid()]
+    };
+
+    var result = new UpladTransactionRequestValidator().TestValidate(request);
+
+    result.ShouldNotHaveAnyValidationErrors();
+  }
+
+  [Fact]
+  public void Upload_rejects_empty_assignment_ids_and_duplicate_categories()
+  {
+    var duplicateCategoryId = Guid.NewGuid();
+    var request = new UpladTransactionRequest
+    {
+      File = CreateFile([1], "transactions.csv"),
+      Category = FileCategoryName.CreditCard,
+      PersonId = Guid.Empty,
+      CategoryIds = [Guid.Empty, duplicateCategoryId, duplicateCategoryId]
+    };
+
+    var result = new UpladTransactionRequestValidator().TestValidate(request);
+
+    result.ShouldHaveValidationErrorFor(item => item.PersonId);
+    result.ShouldHaveValidationErrorFor(item => item.CategoryIds);
+    result.ShouldHaveValidationErrorFor("CategoryIds[0]");
+  }
+
   private static FormFile CreateFile(byte[] data, string fileName)
   {
     return new FormFile(new MemoryStream(data), 0, data.Length, "File", fileName);

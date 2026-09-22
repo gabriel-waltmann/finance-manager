@@ -28,7 +28,8 @@ public class UploadTransactionController(
     {
         try
         {
-            var category = request.Category!.Value;            var file = await _fileService.CreateFromFormFileAsync(request.File, category);
+            var category = request.Category!.Value;
+            var file = await _fileService.CreateFromFormFileAsync(request.File, category);
             var jobId = Guid.NewGuid();
             var fileProcessing = await _fileProcessingService.CreateSubmitted(file.Id, jobId);
             var response = await _fileProcessingService.GetResponse(fileProcessing.Id);
@@ -40,7 +41,9 @@ public class UploadTransactionController(
                     JobId = jobId,
                     FileId = file.Id,
                     FileProcessingId = fileProcessing.Id,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    PersonId = request.PersonId,
+                    CategoryIds = request.CategoryIds
                 });
             }
             catch

@@ -4,6 +4,13 @@ export type FileCategory = 'CreditCard' | 'Extrato'
 
 export type FileProcessingStatus = 'Submitted' | 'Processing' | 'Finished' | 'Failed'
 
+export interface UploadTransactionPayload {
+  file: File
+  category: FileCategory
+  personId?: string
+  categoryIds: string[]
+}
+
 export interface TransactionImportEntity {
   id: Id
   fileName: string

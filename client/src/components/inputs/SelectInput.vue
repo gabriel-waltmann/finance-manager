@@ -9,6 +9,7 @@ defineProps<{
   hideLabel?: boolean
   label: string
   options: SelectOption[]
+  required?: boolean
 }>()
 
 const model = defineModel<string>({ required: true })
@@ -26,6 +27,7 @@ defineEmits<{
       class="w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-700 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 disabled:cursor-not-allowed disabled:bg-stone-100"
       :class="{ 'mt-1': !hideLabel }"
       :disabled="disabled"
+      :required="required"
       @change="$emit('change', $event)"
     >
       <option v-for="option in options" :key="option.value" :value="option.value">

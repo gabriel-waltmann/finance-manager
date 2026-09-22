@@ -9,10 +9,10 @@ import type {
   TransactionPayload,
 } from '../entities/TransactionEntity'
 import type {
-  FileCategory,
   ListTransactionImportParams,
   ListTransactionImportResponse,
   TransactionImportEntity,
+  UploadTransactionPayload,
 } from '../entities/TransactionImportEntity'
 import { apiRequest } from '../api/http'
 
@@ -55,10 +55,16 @@ export class TransactionController {
     await apiRequest<void>(`/transaction/${id}`, { method: 'DELETE' })
   }
 
-  static upload(file: File, category: FileCategory): Promise<TransactionImportEntity> {
+  static upload(payload: UploadTransactionPayload): Promise<TransactionImportEntity> {
     const data = new FormData()
-    data.append('File', file)
-    data.append('Category', category)
+    data.append('File', payload.file)
+    data.append('Category', payload.category)
+
+    if (payload.personId) {
+      data.append('PersonId', payload.personId)
+    }
+
+    payload.categoryIds.forEach((categoryId) => data.append('CategoryIds', categoryId))
 
     return apiRequest<TransactionImportEntity>('/transaction/upload', {
       method: 'POST',

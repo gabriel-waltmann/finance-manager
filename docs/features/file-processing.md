@@ -10,7 +10,7 @@ Transaction CSV imports are asynchronous. The upload request stores the original
 | `FileProcessingModel` / `files_processing` | Tracks a file and queue job with `file_id`, `job_id`, status, and timestamps. |
 | `TransactionImportModel` / `transactions_import` | Links each transaction created by an import to its file-processing row. This is the source of `transactionCount`. |
 | `UploadTransactionController` | Validates and stores the upload, creates tracking state, and publishes the job. |
-| `TransactionImportJob` | Consumes RabbitMQ messages, parses CSV data, creates transactions and import links, and changes status. |
+| `TransactionImportJob` | Consumes RabbitMQ messages, parses CSV data, creates transactions and their requested person/category links, and changes status. |
 | `FileProcessingService` | Reads import history, persists status transitions, builds API responses, and broadcasts changes. |
 | `TransactionImportEventBroadcaster` | Fans status changes out to connected SSE subscribers inside the API process. |
 | `views/imports/` | Lists imports, uploads files, opens the SSE connection, and reconciles live updates with the API. |
@@ -39,7 +39,7 @@ sequenceDiagram
     Queue->>Worker: Deliver job
     Worker->>DB: Set Processing
     Worker-->>SSE: Broadcast Processing
-    Worker->>DB: Parse and create transactions + links
+    Worker->>DB: Validate assignments and create transactions + links
     Worker->>DB: Commit import transaction
     Worker->>DB: Set Finished
     Worker-->>SSE: Broadcast Finished
@@ -47,17 +47,17 @@ sequenceDiagram
 
 The detailed flow is:
 
-1. The client sends `multipart/form-data` to `POST /transaction/upload` with `File` and `Category`.
-2. Validation requires a nonempty `.csv` file no larger than 10 MB and a category of `CreditCard` or `Extrato`.
+1. The client sends `multipart/form-data` to `POST /transaction/upload` with `File`, `Category`, optional `PersonId`, and zero or more `CategoryIds` values.
+2. Validation requires a nonempty `.csv` file no larger than 10 MB and a category of `CreditCard` or `Extrato`. Optional assignment IDs must be nonempty GUIDs, and category IDs cannot be duplicated.
 3. `FileService` reads the upload into memory and saves its bytes, original name, and category in `files`.
 4. The controller generates a job ID and creates a `files_processing` row with `Submitted`. This status is broadcast immediately.
-5. `JobService` publishes a JSON payload containing the job, file, and processing IDs to a durable RabbitMQ queue. The message is persistent.
+5. `JobService` publishes a JSON payload containing the job, file, processing, person, and category IDs to a durable RabbitMQ queue. The message is persistent; missing assignment fields in older queued messages default to no assignments.
 6. The API returns `201` with the import summary. The HTTP request does not wait for CSV parsing or transaction creation.
-7. The hosted `TransactionImportJob` consumes one unacknowledged message at a time, marks the import `Processing`, loads the saved bytes, and parses the selected format.
-8. Transaction creation and `transactions_import` link creation run inside a database transaction. Active duplicates are skipped, so `transactionCount` counts only newly imported rows.
+7. The hosted `TransactionImportJob` consumes one unacknowledged message at a time, marks the import `Processing`, loads the saved bytes, parses the selected format, and verifies that all requested people and categories are still active.
+8. Transaction creation and all `transactions_import`, `transactions_person`, and `transactions_category` link creation run inside a database transaction. Active duplicates are skipped and left unchanged, so `transactionCount` counts only newly imported rows.
 9. After commit, the worker marks the import `Finished` and acknowledges the RabbitMQ message.
 
-If queue publication fails, the controller marks the tracking row `Failed` and returns `500`. If parsing or persistence fails, the worker marks it `Failed` and negatively acknowledges the message with `requeue: false`. The current setup does not define an application retry or dead-letter flow. When the API shuts down during processing, the message remains unacknowledged so RabbitMQ can redeliver it after the channel closes.
+If queue publication fails, the controller marks the tracking row `Failed` and returns `500`. If parsing, assignment validation, or persistence fails, the worker rolls back the import, marks it `Failed`, and negatively acknowledges the message with `requeue: false`. The current setup does not define an application retry or dead-letter flow. When the API shuts down during processing, the message remains unacknowledged so RabbitMQ can redeliver it after the channel closes.
 
 ## Status lifecycle
 
@@ -75,7 +75,7 @@ stateDiagram-v2
 | `Submitted` | File and tracking data are stored and the job is being queued or waiting for a worker. |
 | `Processing` | The worker has started parsing and creating transactions. |
 | `Finished` | The database import committed successfully. |
-| `Failed` | Queue publication, parsing, or processing failed. |
+| `Failed` | Queue publication, parsing, assignment validation, or processing failed. |
 
 Every persisted status change sets `updated_at` and publishes a complete `TransactionImportResponse` containing `id`, `fileName`, `category`, `status`, `transactionCount`, `createdAt`, and `updatedAt`.
 

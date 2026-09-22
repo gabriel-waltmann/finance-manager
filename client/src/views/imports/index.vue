@@ -3,9 +3,12 @@ import ViewHeader from '../../components/headers/ViewHeader.vue'
 import DataTable from '../../components/tables/DataTable.vue'
 import ImportActions from './components/ImportActions.vue'
 import ImportFilter from './components/ImportFilter.vue'
+import ImportUploadDialog from './components/ImportUploadDialog.vue'
 import { useController } from './useController'
 
 const {
+  categories,
+  closeUpload,
   connectionState,
   error,
   filters,
@@ -16,11 +19,15 @@ const {
   loadProgress,
   loading,
   loadingMore,
+  openUpload,
+  persons,
   setLoadMoreTarget,
   tableHeaders,
   tableRows,
-  uploadCategory,
+  uploadForm,
   uploadFile,
+  uploadOpen,
+  uploadOptionsLoading,
   uploadPending,
 } = useController()
 </script>
@@ -30,10 +37,9 @@ const {
     <ViewHeader title="Transaction imports">
       <template #actions>
         <ImportActions
-          v-model:upload-category="uploadCategory"
           :connection-state="connectionState"
           :upload-pending="uploadPending"
-          @upload="uploadFile"
+          @open-upload="openUpload"
         />
       </template>
     </ViewHeader>
@@ -59,6 +65,20 @@ const {
       :load-progress="loadProgress"
       :loading-more="loadingMore"
       :retry-more="loadNextPage"
+    />
+
+    <ImportUploadDialog
+      v-model:category="uploadForm.category"
+      v-model:category-ids="uploadForm.categoryIds"
+      v-model:file="uploadForm.file"
+      v-model:person-id="uploadForm.personId"
+      :categories="categories"
+      :open="uploadOpen"
+      :options-loading="uploadOptionsLoading"
+      :persons="persons"
+      :uploading="uploadPending"
+      @close="closeUpload"
+      @submit="uploadFile"
     />
   </section>
 </template>

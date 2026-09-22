@@ -10,10 +10,10 @@ import {
   type TransactionImportEventHandlers,
 } from '../controllers/TransactionController'
 import type {
-  FileCategory,
   ListTransactionImportParams,
   ListTransactionImportResponse,
   TransactionImportEntity,
+  UploadTransactionPayload,
 } from '../entities/TransactionImportEntity'
 import { financeKeys } from './queryKeys'
 
@@ -22,15 +22,12 @@ export type TransactionImportQueryParams = Omit<ListTransactionImportParams, 'li
 export const TRANSACTION_IMPORT_PAGE_SIZE = 20
 
 export interface UploadTransactionVariables {
-  file: File
-  category: FileCategory
-  input: HTMLInputElement
+  payload: UploadTransactionPayload
 }
 
 interface UploadTransactionMutationOptions {
   onSuccess?: () => void
   onError?: (error: Error) => void
-  onSettled?: (variables: UploadTransactionVariables) => void
 }
 
 export function useTransactionImportsQuery(params: ComputedRef<TransactionImportQueryParams>) {
@@ -58,8 +55,8 @@ export function useUploadTransactionMutation(options: UploadTransactionMutationO
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ file, category }: UploadTransactionVariables) => (
-      TransactionController.upload(file, category)
+    mutationFn: ({ payload }: UploadTransactionVariables) => (
+      TransactionController.upload(payload)
     ),
     onSuccess: async () => {
       options.onSuccess?.()
@@ -67,9 +64,6 @@ export function useUploadTransactionMutation(options: UploadTransactionMutationO
     },
     onError: (error) => {
       options.onError?.(error)
-    },
-    onSettled: (_result, _error, variables) => {
-      options.onSettled?.(variables)
     },
   })
 }
