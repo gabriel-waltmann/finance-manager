@@ -23,11 +23,6 @@ public class ListPersonController(
     {
         try
         {
-            request.Search = string.IsNullOrWhiteSpace(request.Search)
-                ? null
-                : request.Search.Trim();
-            request.Order = request.Order.Trim().ToLowerInvariant();
-
             var response = await _service.List(request);
 
             return StatusCode(200, response);

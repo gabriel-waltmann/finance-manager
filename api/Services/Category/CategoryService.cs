@@ -68,9 +68,7 @@ public class CategoryService(DatabaseContext context)
 
   public async Task<CategoryModel> Create(CreateCategoryRequest request)
   {
-    var title = request.Title.Trim();
-
-    if (await ActiveTitleExists(title))
+    if (await ActiveTitleExists(request.Title))
     {
       throw new ExistsCategoryException();
     }
@@ -78,8 +76,8 @@ public class CategoryService(DatabaseContext context)
     var category = new CategoryModel
     {
       Id = Guid.NewGuid(),
-      Title = title,
-      Description = NormalizeDescription(request.Description),
+      Title = request.Title,
+      Description = request.Description,
       Created_at = DateTime.UtcNow
     };
 
@@ -92,15 +90,14 @@ public class CategoryService(DatabaseContext context)
   public async Task Update(Guid id, UpdateCategoryRequest request)
   {
     var category = await Get(id);
-    var title = request.Title.Trim();
 
-    if (await ActiveTitleExists(title, id))
+    if (await ActiveTitleExists(request.Title, id))
     {
       throw new ExistsCategoryException();
     }
 
-    category.Title = title;
-    category.Description = NormalizeDescription(request.Description);
+    category.Title = request.Title;
+    category.Description = request.Description;
     category.Updated_at = DateTime.UtcNow;
 
     await _context.SaveChangesAsync();
@@ -129,11 +126,6 @@ public class CategoryService(DatabaseContext context)
       category.Title == title &&
       (!currentId.HasValue || category.Id != currentId.Value)
     );
-  }
-
-  private static string? NormalizeDescription(string? description)
-  {
-    return string.IsNullOrWhiteSpace(description) ? null : description.Trim();
   }
 
   private static string EscapeLikePattern(string value)

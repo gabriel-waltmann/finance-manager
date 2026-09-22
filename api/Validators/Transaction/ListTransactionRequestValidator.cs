@@ -1,4 +1,5 @@
 using api.Requests.Transaction;
+using api.Validators.Common;
 using FluentValidation;
 
 namespace api.Validators.Transaction;
@@ -20,6 +21,7 @@ public class ListTransactionRequestValidator : AbstractValidator<ListTransaction
 
     RuleFor(request => request.Search)
       .MaximumLength(200)
+      .SafeOptionalSingleLineText()
       .When(request => !string.IsNullOrWhiteSpace(request.Search));
 
     RuleFor(request => request.PersonId)
@@ -52,7 +54,6 @@ public class ListTransactionRequestValidator : AbstractValidator<ListTransaction
 
   private static bool BeValidOrder(string order)
   {
-    return order.Trim().Equals("asc", StringComparison.OrdinalIgnoreCase) ||
-      order.Trim().Equals("desc", StringComparison.OrdinalIgnoreCase);
+    return order is "asc" or "desc";
   }
 }

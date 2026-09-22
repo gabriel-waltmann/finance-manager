@@ -1,5 +1,6 @@
 using api.Models.FileProcessingStatus;
 using api.Requests.Transaction;
+using api.Validators.Common;
 using FluentValidation;
 
 namespace api.Validators.Transaction;
@@ -21,6 +22,7 @@ public class ListTransactionImportRequestValidator : AbstractValidator<ListTrans
 
     RuleFor(request => request.Search)
       .MaximumLength(200)
+      .SafeOptionalSingleLineText()
       .When(request => !string.IsNullOrWhiteSpace(request.Search));
 
     RuleFor(request => request.Status)
@@ -31,13 +33,12 @@ public class ListTransactionImportRequestValidator : AbstractValidator<ListTrans
 
   private static bool BeValidOrder(string order)
   {
-    return order.Trim().Equals("asc", StringComparison.OrdinalIgnoreCase) ||
-      order.Trim().Equals("desc", StringComparison.OrdinalIgnoreCase);
+    return order is "asc" or "desc";
   }
 
   private static bool BeValidStatus(string? status)
   {
-    return Enum.TryParse<FileProcessingStatusName>(status?.Trim(), true, out var parsed) &&
+    return Enum.TryParse<FileProcessingStatusName>(status, true, out var parsed) &&
       Enum.IsDefined(parsed);
   }
 }

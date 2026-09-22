@@ -20,9 +20,6 @@ public class ListCategoryController(
   {
     try
     {
-      request.Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
-      request.Order = request.Order.Trim().ToLowerInvariant();
-
       return StatusCode(200, await service.List(request));
     }
     catch (Exception ex)

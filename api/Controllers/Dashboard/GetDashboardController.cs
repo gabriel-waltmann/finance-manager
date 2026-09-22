@@ -23,8 +23,6 @@ public class GetDashboardController(
     {
         try
         {
-            request.Order = request.Order.Trim().ToLowerInvariant();
-
             var response = await _service.Get(request);
 
             return StatusCode(200, response);

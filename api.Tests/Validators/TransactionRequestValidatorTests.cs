@@ -1,3 +1,4 @@
+using api.Normalization.Transaction;
 using api.Requests.Transaction;
 using api.Validators.Transaction;
 using FluentValidation.TestHelper;
@@ -38,5 +39,33 @@ public class TransactionRequestValidatorTests
     var result = new UpdateTransactionRequestValidator().TestValidate(request);
 
     result.ShouldNotHaveAnyValidationErrors();
+  }
+
+  [Fact]
+  public void Imported_title_is_normalized_and_rejects_control_characters()
+  {
+    var normalized = new CreateTransactionRequest
+    {
+      Date = DateTime.UtcNow,
+      Title = $"  {new string('t', 200)}  ",
+      Amount = -10
+    };
+    var unsafeRequest = new CreateTransactionRequest
+    {
+      Date = DateTime.UtcNow,
+      Title = "Merchant\nName",
+      Amount = -10
+    };
+
+    var normalizer = new CreateTransactionRequestNormalizer();
+    normalizer.Normalize(normalized);
+    normalizer.Normalize(unsafeRequest);
+
+    var normalizedResult = new CreateTransactionRequestValidator().TestValidate(normalized);
+    var unsafeResult = new CreateTransactionRequestValidator().TestValidate(unsafeRequest);
+
+    normalizedResult.ShouldNotHaveAnyValidationErrors();
+    Assert.Equal(200, normalized.Title.Length);
+    unsafeResult.ShouldHaveValidationErrorFor(item => item.Title);
   }
 }

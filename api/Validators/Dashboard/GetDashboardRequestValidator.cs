@@ -43,7 +43,6 @@ public class GetDashboardRequestValidator : AbstractValidator<GetDashboardReques
 
   private static bool BeValidOrder(string order)
   {
-    return order.Trim().Equals("asc", StringComparison.OrdinalIgnoreCase) ||
-      order.Trim().Equals("desc", StringComparison.OrdinalIgnoreCase);
+    return order is "asc" or "desc";
   }
 }

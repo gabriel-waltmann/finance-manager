@@ -1,3 +1,4 @@
+using api.Normalization.Person;
 using api.Requests.Person;
 using api.Validators.Person;
 using FluentValidation.TestHelper;
@@ -33,13 +34,18 @@ public class PersonRequestValidatorTests
   [Fact]
   public void List_accepts_unpaged_and_trimmed_case_insensitive_order()
   {
-    var unpagedResult = new ListPersonRequestValidator().TestValidate(new ListPersonRequest());
-    var pagedResult = new ListPersonRequestValidator().TestValidate(new ListPersonRequest
+    var unpagedRequest = new ListPersonRequest();
+    var pagedRequest = new ListPersonRequest
     {
       Page = 1,
       Limit = 100,
       Order = " DESC "
-    });
+    };
+    var normalizer = new ListPersonRequestNormalizer();
+    normalizer.Normalize(unpagedRequest);
+    normalizer.Normalize(pagedRequest);
+    var unpagedResult = new ListPersonRequestValidator().TestValidate(unpagedRequest);
+    var pagedResult = new ListPersonRequestValidator().TestValidate(pagedRequest);
 
     unpagedResult.ShouldNotHaveAnyValidationErrors();
     pagedResult.ShouldNotHaveAnyValidationErrors();
@@ -75,5 +81,34 @@ public class PersonRequestValidatorTests
     var result = new UpdatePersonRequestValidator().TestValidate(request);
 
     result.ShouldNotHaveAnyValidationErrors();
+  }
+
+  [Fact]
+  public void Create_normalizes_before_validation_and_rejects_single_line_controls()
+  {
+    var normalized = new CreatePersonRequest
+    {
+      Name = $"  {new string('n', 120)}  ",
+      Email = " USER@EXAMPLE.COM ",
+      PhoneNumber = " <strong>123</strong> "
+    };
+    var unsafeRequest = new CreatePersonRequest
+    {
+      Name = "First\nLast",
+      Email = "safe@example.com",
+      PhoneNumber = "123"
+    };
+
+    var normalizer = new CreatePersonRequestNormalizer();
+    normalizer.Normalize(normalized);
+    normalizer.Normalize(unsafeRequest);
+
+    var normalizedResult = new CreatePersonRequestValidator().TestValidate(normalized);
+    var unsafeResult = new CreatePersonRequestValidator().TestValidate(unsafeRequest);
+
+    normalizedResult.ShouldNotHaveAnyValidationErrors();
+    Assert.Equal("user@example.com", normalized.Email);
+    Assert.Equal("<strong>123</strong>", normalized.PhoneNumber);
+    unsafeResult.ShouldHaveValidationErrorFor(item => item.Name);
   }
 }

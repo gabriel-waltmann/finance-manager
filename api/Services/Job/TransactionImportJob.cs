@@ -5,12 +5,14 @@ using api.Exceptions;
 using api.Models.FileCategory;
 using api.Models.Files;
 using api.Models.Job;
+using api.Normalization;
 using api.Requests.Transaction;
 using api.Services.File;
 using api.Services.FileProcessing;
 using api.Services.Transaction;
 using api.Services.TransactionImport;
 using CsvHelper;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -21,11 +23,13 @@ namespace api.Services.Job;
 public class TransactionImportJob(
   IServiceScopeFactory serviceScopeFactory,
   RabbitMqConnection rabbitMqConnection,
+  RequestNormalizerDispatcher requestNormalizer,
   ILogger<TransactionImportJob> logger
 ) : BackgroundService
 {
   private readonly IServiceScopeFactory _serviceScopeFactory = serviceScopeFactory;
   private readonly RabbitMqConnection _rabbitMqConnection = rabbitMqConnection;
+  private readonly RequestNormalizerDispatcher _requestNormalizer = requestNormalizer;
   private readonly ILogger<TransactionImportJob> _logger = logger;
   private static readonly string[] IgnoredImportTitleTexts =
   [
@@ -128,6 +132,8 @@ public class TransactionImportJob(
       var fileProcessingService = scope.ServiceProvider.GetRequiredService<FileProcessingService>();
       var transactionService = scope.ServiceProvider.GetRequiredService<TransactionService>();
       var transactionImportService = scope.ServiceProvider.GetRequiredService<TransactionImportService>();
+      var transactionValidator = scope.ServiceProvider
+        .GetRequiredService<IValidator<CreateTransactionRequest>>();
       var context = scope.ServiceProvider.GetRequiredService<DatabaseContext>();
 
       await fileProcessingService.MarkProcessing(payload.FileProcessingId);
@@ -150,6 +156,8 @@ public class TransactionImportJob(
 
         try
         {
+          _requestNormalizer.Normalize(request);
+          await transactionValidator.ValidateAndThrowAsync(request, cancellationToken);
           var transaction = await transactionService.Create(request);
 
           await transactionImportService.Create(

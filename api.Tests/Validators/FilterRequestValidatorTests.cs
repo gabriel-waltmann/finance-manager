@@ -1,3 +1,4 @@
+using api.Normalization.Dashboard;
 using api.Requests.Dashboard;
 using api.Requests.Transaction;
 using api.Validators.Dashboard;
@@ -48,6 +49,8 @@ public class FilterRequestValidatorTests
       StartDate = date,
       EndDate = date
     };
+
+    new GetDashboardRequestNormalizer().Normalize(request);
 
     var result = new GetDashboardRequestValidator().TestValidate(request);
 

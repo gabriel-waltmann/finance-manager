@@ -86,6 +86,28 @@ public class UploadTransactionRequestValidatorTests
     result.ShouldHaveValidationErrorFor("CategoryIds[0]");
   }
 
+  [Fact]
+  public void Upload_rejects_unsafe_or_overlong_file_basenames()
+  {
+    var unsafeRequest = new UpladTransactionRequest
+    {
+      File = CreateFile([1], "unsafe\nname.csv"),
+      Category = FileCategoryName.Extrato
+    };
+    var overlongRequest = new UpladTransactionRequest
+    {
+      File = CreateFile([1], $"{new string('f', 252)}.csv"),
+      Category = FileCategoryName.Extrato
+    };
+
+    new UpladTransactionRequestValidator()
+      .TestValidate(unsafeRequest)
+      .ShouldHaveValidationErrorFor(item => item.File);
+    new UpladTransactionRequestValidator()
+      .TestValidate(overlongRequest)
+      .ShouldHaveValidationErrorFor(item => item.File);
+  }
+
   private static FormFile CreateFile(byte[] data, string fileName)
   {
     return new FormFile(new MemoryStream(data), 0, data.Length, "File", fileName);

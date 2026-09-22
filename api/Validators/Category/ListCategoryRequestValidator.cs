@@ -1,4 +1,5 @@
 using api.Requests.Category;
+using api.Validators.Common;
 using FluentValidation;
 
 namespace api.Validators.Category;
@@ -27,12 +28,12 @@ public class ListCategoryRequestValidator : AbstractValidator<ListCategoryReques
 
     RuleFor(request => request.Search)
       .MaximumLength(200)
+      .SafeOptionalSingleLineText()
       .When(request => !string.IsNullOrWhiteSpace(request.Search));
   }
 
   private static bool BeValidOrder(string order)
   {
-    return order.Trim().Equals("asc", StringComparison.OrdinalIgnoreCase) ||
-      order.Trim().Equals("desc", StringComparison.OrdinalIgnoreCase);
+    return order is "asc" or "desc";
   }
 }

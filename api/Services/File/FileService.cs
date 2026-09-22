@@ -2,6 +2,7 @@ using api.Exceptions;
 using api.Models.Database;
 using api.Models.File;
 using api.Models.FileCategory;
+using api.Normalization;
 
 namespace api.Services.File;
 
@@ -19,7 +20,7 @@ public class FileService(DatabaseContext context)
     var model = new FileModel
     {
       Id = Guid.NewGuid(),
-      Name = file.FileName,
+      Name = RequestTextNormalizer.NormalizeFileName(file.FileName),
       Data = memoryStream.ToArray(),
       Category = category,
       Created_at = DateTime.UtcNow

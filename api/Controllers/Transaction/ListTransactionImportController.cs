@@ -23,10 +23,6 @@ public class ListTransactionImportController(
   {
     try
     {
-      request.Search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim();
-      request.Status = string.IsNullOrWhiteSpace(request.Status) ? null : request.Status.Trim();
-      request.Order = request.Order.Trim().ToLowerInvariant();
-
       return Ok(await _service.List(request));
     }
     catch (Exception ex)

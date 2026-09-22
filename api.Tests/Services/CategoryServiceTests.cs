@@ -3,6 +3,7 @@ using api.Models.Category;
 using api.Models.Database;
 using api.Models.Transaction;
 using api.Models.TransactionCategory;
+using api.Normalization.Category;
 using api.Requests.Category;
 using api.Requests.TransactionCategory;
 using api.Services.Category;
@@ -15,16 +16,20 @@ namespace api.Tests.Services;
 public class CategoryServiceTests
 {
   [Fact]
-  public async Task Category_crud_normalizes_fields_and_reuses_soft_deleted_title()
+  public async Task Category_crud_persists_normalized_fields_and_reuses_soft_deleted_title()
   {
     await using var context = CreateContext();
     var service = new CategoryService(context);
+    var createNormalizer = new CreateCategoryRequestNormalizer();
+    var updateNormalizer = new UpdateCategoryRequestNormalizer();
 
-    var category = await service.Create(new CreateCategoryRequest
+    var create = new CreateCategoryRequest
     {
       Title = "  Housing  ",
       Description = "   "
-    });
+    };
+    createNormalizer.Normalize(create);
+    var category = await service.Create(create);
 
     Assert.Equal("Housing", category.Title);
     Assert.Null(category.Description);
@@ -32,17 +37,21 @@ public class CategoryServiceTests
       new CreateCategoryRequest { Title = "Housing" }
     ));
 
-    await service.Update(category.Id, new UpdateCategoryRequest
+    var update = new UpdateCategoryRequest
     {
       Title = "  Home  ",
       Description = "  Rent and utilities  "
-    });
+    };
+    updateNormalizer.Normalize(update);
+    await service.Update(category.Id, update);
 
     Assert.Equal("Home", category.Title);
     Assert.Equal("Rent and utilities", category.Description);
 
     await service.Delete(category.Id);
-    var replacement = await service.Create(new CreateCategoryRequest { Title = "Home" });
+    var replacementRequest = new CreateCategoryRequest { Title = "Home" };
+    createNormalizer.Normalize(replacementRequest);
+    var replacement = await service.Create(replacementRequest);
 
     Assert.NotEqual(category.Id, replacement.Id);
     Assert.NotNull(category.Deleted_at);

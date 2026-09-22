@@ -1,4 +1,5 @@
 using api.Requests.Person;
+using api.Validators.Common;
 using FluentValidation;
 
 namespace api.Validators.Person;
@@ -9,15 +10,18 @@ public class UpdatePersonRequestValidator : AbstractValidator<UpdatePersonReques
   {
     RuleFor(request => request.Name)
       .NotEmpty()
-      .MaximumLength(120);
+      .MaximumLength(120)
+      .SafeSingleLineText();
 
     RuleFor(request => request.Email)
       .NotEmpty()
       .MaximumLength(254)
-      .EmailAddress();
+      .EmailAddress()
+      .SafeSingleLineText();
 
     RuleFor(request => request.PhoneNumber)
       .NotEmpty()
-      .MaximumLength(32);
+      .MaximumLength(32)
+      .SafeSingleLineText();
   }
 }
