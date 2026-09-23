@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace api.Services.Transaction;
 
+// TODO: split all services to make files less complex
 public class TransactionService(DatabaseContext context)
 {
   private readonly DatabaseContext _context = context; 
@@ -71,19 +72,16 @@ public class TransactionService(DatabaseContext context)
     var query = _context.Transactions
       .Where(transaction => withDeleted || transaction.Deleted_at == null);
 
-    if (request.StartDate.HasValue)
-    {
-      var startDate = request.StartDate.Value.Date;
-
-      query = query.Where(transaction => transaction.Date >= startDate);
-    }
-
-    if (request.EndDate.HasValue)
-    {
-      var nextEndDate = request.EndDate.Value.Date.AddDays(1);
-
-      query = query.Where(transaction => transaction.Date < nextEndDate);
-    }
+    query = ApplyFilters(
+      query,
+      request.StartDate,
+      request.EndDate,
+      request.PersonId,
+      request.Unassigned,
+      request.CategoryId,
+      request.Uncategorized,
+      withDeleted
+    );
 
     if (!string.IsNullOrWhiteSpace(request.Search))
     {
@@ -107,62 +105,6 @@ public class TransactionService(DatabaseContext context)
             category.Id == transactionCategory.CategoryId &&
             (withDeleted || category.Deleted_at == null) &&
             EF.Functions.ILike(category.Title, searchPattern, "\\")
-          )
-        )
-      );
-    }
-
-    if (request.PersonId.HasValue)
-    {
-      var personId = request.PersonId.Value;
-
-      query = query.Where(transaction =>
-        _context.TransactionsPerson.Any(transactionPerson =>
-          transactionPerson.TransactionId == transaction.Id &&
-          transactionPerson.Deleted_at == null &&
-          transactionPerson.PersonId == personId &&
-          (withDeleted || _context.Persons.Any(person =>
-            person.Id == transactionPerson.PersonId &&
-            person.Deleted_at == null
-          ))
-        )
-      );
-    }
-    else if (request.Unassigned)
-    {
-      query = query.Where(transaction =>
-        !_context.TransactionsPerson.Any(transactionPerson =>
-          transactionPerson.TransactionId == transaction.Id &&
-          transactionPerson.Deleted_at == null
-        )
-      );
-    }
-
-    if (request.CategoryId.HasValue)
-    {
-      var categoryId = request.CategoryId.Value;
-
-      query = query.Where(transaction =>
-        _context.TransactionsCategory.Any(transactionCategory =>
-          transactionCategory.TransactionId == transaction.Id &&
-          transactionCategory.Deleted_at == null &&
-          transactionCategory.CategoryId == categoryId &&
-          (withDeleted || _context.Categories.Any(category =>
-            category.Id == transactionCategory.CategoryId &&
-            category.Deleted_at == null
-          ))
-        )
-      );
-    }
-    else if (request.Uncategorized)
-    {
-      query = query.Where(transaction =>
-        !_context.TransactionsCategory.Any(transactionCategory =>
-          transactionCategory.TransactionId == transaction.Id &&
-          transactionCategory.Deleted_at == null &&
-          _context.Categories.Any(category =>
-            category.Id == transactionCategory.CategoryId &&
-            (withDeleted || category.Deleted_at == null)
           )
         )
       );
@@ -258,6 +200,116 @@ public class TransactionService(DatabaseContext context)
     };
   }
 
+  public async Task<AutoAssignTransactionsResponse> AutoAssign(
+    AutoAssignTransactionsRequest request
+  )
+  {
+    var filter = request.Filter;
+    var transactionIds = await ApplyFilters(
+        _context.Transactions.Where(transaction => transaction.Deleted_at == null),
+        filter.StartDate,
+        filter.EndDate,
+        filter.PersonId,
+        filter.Unassigned,
+        filter.CategoryId,
+        filter.Uncategorized,
+        false
+      )
+      .Select(transaction => transaction.Id)
+      .ToListAsync();
+
+    if (request.PersonAction == "set")
+    {
+      var personExists = await _context.Persons.AnyAsync(person =>
+        person.Id == request.TargetPersonId && person.Deleted_at == null
+      );
+
+      if (!personExists)
+      {
+        throw new NotFoundPersonException();
+      }
+    }
+
+    var targetCategoryIds = request.TargetCategoryIds.ToHashSet();
+
+    if (request.CategoryAction is "add" or "replace")
+    {
+      var categoryCount = await _context.Categories.CountAsync(category =>
+        targetCategoryIds.Contains(category.Id) && category.Deleted_at == null
+      );
+
+      if (categoryCount != targetCategoryIds.Count)
+      {
+        throw new NotFoundCategoryException();
+      }
+    }
+
+    if (transactionIds.Count == 0)
+    {
+      return new AutoAssignTransactionsResponse
+      {
+        MatchedCount = 0,
+        PersonChangedCount = 0,
+        CategoryChangedCount = 0
+      };
+    }
+
+    var transactionPersonByTransactionId = await _context.TransactionsPerson
+      .Where(link => transactionIds.Contains(link.TransactionId) && link.Deleted_at == null)
+      .ToDictionaryAsync(link => link.TransactionId);
+    var categoryLinks = await _context.TransactionsCategory
+      .Where(link => transactionIds.Contains(link.TransactionId) && link.Deleted_at == null)
+      .ToListAsync();
+    var linkedCategoryIds = categoryLinks
+      .Select(link => link.CategoryId)
+      .Distinct()
+      .ToList();
+    var visibleCategoryIds = await _context.Categories
+      .Where(category => linkedCategoryIds.Contains(category.Id) && category.Deleted_at == null)
+      .Select(category => category.Id)
+      .ToHashSetAsync();
+    var categoryLinksByTransactionId = categoryLinks
+      .GroupBy(link => link.TransactionId)
+      .ToDictionary(group => group.Key, group => group.ToList());
+    var now = DateTime.UtcNow;
+    var personChangedCount = 0;
+    var categoryChangedCount = 0;
+
+    foreach (var transactionId in transactionIds)
+    {
+      if (ApplyPersonAssignment(
+        transactionId,
+        transactionPersonByTransactionId.GetValueOrDefault(transactionId),
+        request,
+        now
+      ))
+      {
+        personChangedCount++;
+      }
+
+      if (ApplyCategoryAssignment(
+        transactionId,
+        categoryLinksByTransactionId.GetValueOrDefault(transactionId, []),
+        visibleCategoryIds,
+        targetCategoryIds,
+        request.CategoryAction,
+        now
+      ))
+      {
+        categoryChangedCount++;
+      }
+    }
+
+    await _context.SaveChangesAsync();
+
+    return new AutoAssignTransactionsResponse
+    {
+      MatchedCount = transactionIds.Count,
+      PersonChangedCount = personChangedCount,
+      CategoryChangedCount = categoryChangedCount
+    };
+  }
+
   public async Task<TransactionModel> Create(CreateTransactionRequest dto) {
     var exists = await _context.Transactions.AnyAsync(transaction =>
       transaction.Deleted_at == null &&
@@ -299,6 +351,180 @@ public class TransactionService(DatabaseContext context)
     transaction.Deleted_at = DateTime.UtcNow;
 
     await _context.SaveChangesAsync();
+  }
+
+  private IQueryable<TransactionModel> ApplyFilters(
+    IQueryable<TransactionModel> query,
+    DateTime? startDateValue,
+    DateTime? endDateValue,
+    Guid? personId,
+    bool unassigned,
+    Guid? categoryId,
+    bool uncategorized,
+    bool withDeleted
+  )
+  {
+    if (startDateValue.HasValue)
+    {
+      var startDate = startDateValue.Value.Date;
+      query = query.Where(transaction => transaction.Date >= startDate);
+    }
+
+    if (endDateValue.HasValue)
+    {
+      var nextEndDate = endDateValue.Value.Date.AddDays(1);
+      query = query.Where(transaction => transaction.Date < nextEndDate);
+    }
+
+    if (personId.HasValue)
+    {
+      query = query.Where(transaction =>
+        _context.TransactionsPerson.Any(transactionPerson =>
+          transactionPerson.TransactionId == transaction.Id &&
+          transactionPerson.Deleted_at == null &&
+          transactionPerson.PersonId == personId.Value &&
+          (withDeleted || _context.Persons.Any(person =>
+            person.Id == transactionPerson.PersonId &&
+            person.Deleted_at == null
+          ))
+        )
+      );
+    }
+    else if (unassigned)
+    {
+      query = query.Where(transaction =>
+        !_context.TransactionsPerson.Any(transactionPerson =>
+          transactionPerson.TransactionId == transaction.Id &&
+          transactionPerson.Deleted_at == null
+        )
+      );
+    }
+
+    if (categoryId.HasValue)
+    {
+      query = query.Where(transaction =>
+        _context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          transactionCategory.CategoryId == categoryId.Value &&
+          (withDeleted || _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            category.Deleted_at == null
+          ))
+        )
+      );
+    }
+    else if (uncategorized)
+    {
+      query = query.Where(transaction =>
+        !_context.TransactionsCategory.Any(transactionCategory =>
+          transactionCategory.TransactionId == transaction.Id &&
+          transactionCategory.Deleted_at == null &&
+          _context.Categories.Any(category =>
+            category.Id == transactionCategory.CategoryId &&
+            (withDeleted || category.Deleted_at == null)
+          )
+        )
+      );
+    }
+
+    return query;
+  }
+
+  private bool ApplyPersonAssignment(
+    Guid transactionId,
+    TransactionPersonModel? currentLink,
+    AutoAssignTransactionsRequest request,
+    DateTime now
+  )
+  {
+    if (request.PersonAction == "unchanged")
+    {
+      return false;
+    }
+
+    if (request.PersonAction == "clear")
+    {
+      if (currentLink == null)
+      {
+        return false;
+      }
+
+      currentLink.Deleted_at = now;
+      return true;
+    }
+
+    var targetPersonId = request.TargetPersonId!.Value;
+
+    if (currentLink == null)
+    {
+      _context.TransactionsPerson.Add(new TransactionPersonModel
+      {
+        Id = Guid.NewGuid(),
+        TransactionId = transactionId,
+        PersonId = targetPersonId,
+        Created_at = now
+      });
+      return true;
+    }
+
+    if (currentLink.PersonId == targetPersonId)
+    {
+      return false;
+    }
+
+    currentLink.PersonId = targetPersonId;
+    currentLink.Updated_at = now;
+    return true;
+  }
+
+  private bool ApplyCategoryAssignment(
+    Guid transactionId,
+    List<TransactionCategoryModel> currentLinks,
+    HashSet<Guid> visibleCategoryIds,
+    HashSet<Guid> targetCategoryIds,
+    string action,
+    DateTime now
+  )
+  {
+    if (action == "unchanged")
+    {
+      return false;
+    }
+
+    var currentCategoryIds = currentLinks.Select(link => link.CategoryId).ToHashSet();
+    var linksToRemove = action is "replace" or "clear"
+      ? currentLinks.Where(link =>
+        visibleCategoryIds.Contains(link.CategoryId) &&
+        !targetCategoryIds.Contains(link.CategoryId)
+      ).ToList()
+      : [];
+    var categoryIdsToAdd = action is "add" or "replace"
+      ? targetCategoryIds.Where(categoryId => !currentCategoryIds.Contains(categoryId)).ToList()
+      : [];
+
+    if (linksToRemove.Count == 0 && categoryIdsToAdd.Count == 0)
+    {
+      return false;
+    }
+
+    foreach (var link in linksToRemove)
+    {
+      link.Deleted_at = now;
+    }
+
+    foreach (var categoryId in categoryIdsToAdd)
+    {
+      _context.TransactionsCategory.Add(new TransactionCategoryModel
+      {
+        Id = Guid.NewGuid(),
+        TransactionId = transactionId,
+        CategoryId = categoryId,
+        Created_at = now
+      });
+    }
+
+    return true;
   }
 
   private async Task<TransactionPersonModel?> GetTransactionPerson(Guid transactionId, bool withDeleted)

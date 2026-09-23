@@ -11,6 +11,10 @@ import { TransactionPersonController } from '../controllers/TransactionPersonCon
 import { TransactionCategoryController } from '../controllers/TransactionCategoryController'
 import type { PersonEntity } from '../entities/PersonEntity'
 import type {
+  AutoAssignTransactionsPayload,
+  AutoAssignTransactionsResponse,
+} from '../entities/AutoAssignTransactionEntity'
+import type {
   ListTransactionParams,
   ListTransactionResponse,
   TransactionPayload,
@@ -45,6 +49,11 @@ export interface CategoryAssignmentVariables {
   nextCategoryIds: string[]
 }
 
+interface AutoAssignTransactionsMutationOptions {
+  onSuccess?: (response: AutoAssignTransactionsResponse) => void
+  onError?: (error: Error) => void
+}
+
 interface SaveTransactionMutationOptions {
   onSuccess?: (variables: SaveTransactionVariables) => void
   onError?: (error: Error) => void
@@ -65,7 +74,10 @@ interface DeleteTransactionMutationOptions {
   onError?: (error: Error) => void
 }
 
-export function useTransactionsQuery(params: ComputedRef<TransactionQueryParams>) {
+export function useTransactionsQuery(
+  params: ComputedRef<TransactionQueryParams>,
+  enabled?: ComputedRef<boolean>,
+) {
   const queryKey = computed(() => financeKeys.transactionList({
     ...params.value,
     limit: TRANSACTION_PAGE_SIZE,
@@ -81,9 +93,29 @@ export function useTransactionsQuery(params: ComputedRef<TransactionQueryParams>
     getNextPageParam: (lastPage) => (
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined
     ),
+    enabled,
   })
 
   return { query, queryKey }
+}
+
+export function useAutoAssignTransactionsMutation(
+  options: AutoAssignTransactionsMutationOptions = {},
+) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (payload: AutoAssignTransactionsPayload) => (
+      TransactionController.autoAssign(payload)
+    ),
+    onSuccess: async (response) => {
+      await invalidateTransactionData(queryClient)
+      options.onSuccess?.(response)
+    },
+    onError: (error) => {
+      options.onError?.(error)
+    },
+  })
 }
 
 export function useSaveTransactionMutation(options: SaveTransactionMutationOptions = {}) {

@@ -7,6 +7,7 @@ const navItems = [
   { to: '/', label: 'Dashboard' },
   { to: '/transactions', label: 'Transactions' },
   { to: '/imports', label: 'Imports' },
+  { to: '/auto-assign', label: 'Auto assign' },
   { to: '/person', label: 'Person' },
   { to: '/category', label: 'Categories' },
 ] as const
@@ -26,7 +27,7 @@ const navItems = [
           </div>
         </div>
 
-        <nav class="flex gap-2" aria-label="Main navigation">
+        <nav class="flex flex-wrap gap-2" aria-label="Main navigation">
           <RouterLink
             v-for="item in navItems"
             :key="item.to"

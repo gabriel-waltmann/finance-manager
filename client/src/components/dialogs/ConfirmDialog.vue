@@ -7,6 +7,7 @@ defineProps<{
   message: string
   confirmLabel?: string
   busy?: boolean
+  busyLabel?: string
 }>()
 
 defineEmits<{
@@ -33,7 +34,7 @@ defineEmits<{
         :disabled="busy"
         @click="$emit('confirm')"
       >
-        {{ busy ? 'Deleting...' : (confirmLabel ?? 'Delete') }}
+        {{ busy ? (busyLabel ?? 'Deleting...') : (confirmLabel ?? 'Delete') }}
       </button>
     </div>
   </ModalDialog>

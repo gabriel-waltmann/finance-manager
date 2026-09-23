@@ -4,6 +4,7 @@ import TransactionsView from '../views/transactions/index.vue'
 import PersonView from '../views/person/index.vue'
 import ImportsView from '../views/imports/index.vue'
 import CategoryView from '../views/category/index.vue'
+import AutoAssignView from '../views/auto-assign/index.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -32,6 +33,11 @@ const router = createRouter({
       path: '/imports',
       name: 'imports',
       component: ImportsView,
+    },
+    {
+      path: '/auto-assign',
+      name: 'auto-assign',
+      component: AutoAssignView,
     },
   ],
 })

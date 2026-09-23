@@ -1,4 +1,8 @@
 import type {
+  AutoAssignTransactionsPayload,
+  AutoAssignTransactionsResponse,
+} from '../entities/AutoAssignTransactionEntity'
+import type {
   DashboardParams,
   GetDashboardResponse,
 } from '../entities/Dashboard'
@@ -35,6 +39,15 @@ export class TransactionController {
     signal?: AbortSignal,
   ): Promise<ListTransactionResponse> {
     return apiRequest<ListTransactionResponse>('/transactions', { params, signal })
+  }
+
+  static autoAssign(
+    payload: AutoAssignTransactionsPayload,
+  ): Promise<AutoAssignTransactionsResponse> {
+    return apiRequest<AutoAssignTransactionsResponse>('/transactions/auto-assign', {
+      method: 'POST',
+      data: payload,
+    })
   }
 
   static create(payload: TransactionPayload): Promise<TransactionEntity> {

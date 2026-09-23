@@ -187,6 +187,7 @@ public class RequestNormalizerTests
       new CreateTransactionRequestNormalizer(),
       new UpdateTransactionRequestNormalizer(),
       new ListTransactionRequestNormalizer(),
+      new AutoAssignTransactionsRequestNormalizer(),
       new ListTransactionImportRequestNormalizer(),
       new GetDashboardRequestNormalizer()
     ];

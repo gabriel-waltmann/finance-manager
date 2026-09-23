@@ -28,6 +28,7 @@ The API treats an active row with the same `date`, `title`, and `amount` as a du
 | `PUT` | `/transaction/{id}` | Replaces `date`, `title`, and `amount`, and sets `updated_at`. |
 | `DELETE` | `/transaction/{id}` | Sets `deleted_at` and returns `200`. A missing record also returns `200`. |
 | `POST` | `/transaction/upload` | Accepts a CSV for asynchronous import. See [file processing](./file-processing.md). |
+| `POST` | `/transactions/auto-assign` | Applies person and category changes to every active transaction matching the supplied filters. |
 
 Create and update requests use the same shape:
 
@@ -82,6 +83,14 @@ Search matches transaction titles, assigned person names, and visible category t
 ```
 
 When assignments exist, the response contains the person link/person and arrays of transaction-category links/visible categories. Links to soft-deleted categories remain in `transactionCategories`, but deleted categories are omitted from `categories`. The list implementation loads the transaction page first and then fetches related records for those transaction IDs.
+
+## Bulk auto assignment
+
+`POST /transactions/auto-assign` performs a one-time bulk update over active transactions. Its nested `filter` accepts inclusive `startDate` and `endDate`, `personId` or `unassigned`, and `categoryId` or `uncategorized`. At least one filter is required. The service snapshots all matching IDs before changing any assignment, so a change that makes a transaction stop matching does not alter the operation's scope.
+
+`personAction` accepts `unchanged`, `set`, or `clear`; `set` requires `targetPersonId`. `categoryAction` accepts `unchanged`, `add`, `replace`, or `clear`; `add` and `replace` require one or more unique `targetCategoryIds`. Add preserves existing visible categories, while replace makes the requested active categories the visible set. Historical links to deleted categories remain untouched.
+
+The service validates active assignment targets before making changes, saves the operation as one unit, and returns `matchedCount`, `personChangedCount`, and `categoryChangedCount`. Missing or deleted assignment targets return `404`; invalid filter/action combinations return `400`.
 
 ## Soft deletion and current behavior
 

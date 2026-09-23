@@ -20,7 +20,8 @@ One strongly typed normalizer per string-bearing request applies field-specific 
 | Request area | Rules |
 | --- | --- |
 | Pagination | `page` is at least 1, `limit` is between 1 and 100, and `order` is `asc` or `desc` (case-insensitive and whitespace-tolerant). |
-| Transaction filters | Search is at most 200 characters; an optional person ID cannot be empty; `personId` and `unassigned` cannot be combined; start date cannot be after end date. |
+| Transaction filters | Search is at most 200 characters; optional person/category IDs cannot be empty; ID filters cannot be combined with their unassigned/uncategorized flags; start date cannot be after end date. |
+| Auto assignment | At least one transaction filter and one assignment action are required; actions and target IDs must be consistent; category target IDs must be unique and non-empty. |
 | Dashboard filters | Pagination rules apply; an optional person ID cannot be empty; start date cannot be after end date. |
 | Import filters | Pagination rules apply; search is at most 200 characters; status is `Submitted`, `Processing`, `Finished`, or `Failed`. |
 | Person create/update | Name is nonblank and at most 120 characters; email is nonblank, valid, and at most 254 characters; phone number is nonblank and at most 32 characters. |
