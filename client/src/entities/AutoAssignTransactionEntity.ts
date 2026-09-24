@@ -4,6 +4,7 @@ export type AutoAssignPersonAction = 'unchanged' | 'set' | 'clear'
 export type AutoAssignCategoryAction = 'unchanged' | 'add' | 'replace' | 'clear'
 
 export interface AutoAssignTransactionFilter {
+  title?: string
   startDate?: string
   endDate?: string
   personId?: Id

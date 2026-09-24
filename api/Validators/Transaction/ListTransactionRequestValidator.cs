@@ -24,6 +24,11 @@ public class ListTransactionRequestValidator : AbstractValidator<ListTransaction
       .SafeOptionalSingleLineText()
       .When(request => !string.IsNullOrWhiteSpace(request.Search));
 
+    RuleFor(request => request.Title)
+      .MaximumLength(200)
+      .SafeOptionalSingleLineText()
+      .When(request => !string.IsNullOrWhiteSpace(request.Title));
+
     RuleFor(request => request.PersonId)
       .NotEqual(Guid.Empty)
       .When(request => request.PersonId.HasValue)

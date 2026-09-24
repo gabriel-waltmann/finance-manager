@@ -1,4 +1,5 @@
 using api.Requests.Transaction;
+using api.Validators.Common;
 using FluentValidation;
 
 namespace api.Validators.Transaction;
@@ -8,6 +9,11 @@ public class AutoAssignTransactionFilterRequestValidator :
 {
   public AutoAssignTransactionFilterRequestValidator()
   {
+    RuleFor(request => request.Title)
+      .MaximumLength(200)
+      .SafeOptionalSingleLineText()
+      .When(request => !string.IsNullOrWhiteSpace(request.Title));
+
     RuleFor(request => request.PersonId)
       .NotEqual(Guid.Empty)
       .When(request => request.PersonId.HasValue)
@@ -43,7 +49,8 @@ public class AutoAssignTransactionFilterRequestValidator :
 
   private static bool HasAnyFilter(AutoAssignTransactionFilterRequest request)
   {
-    return request.StartDate.HasValue ||
+    return !string.IsNullOrWhiteSpace(request.Title) ||
+      request.StartDate.HasValue ||
       request.EndDate.HasValue ||
       request.PersonId.HasValue ||
       request.Unassigned ||

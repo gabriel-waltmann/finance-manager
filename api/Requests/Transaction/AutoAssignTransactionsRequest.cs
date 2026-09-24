@@ -2,6 +2,7 @@ namespace api.Requests.Transaction;
 
 public class AutoAssignTransactionFilterRequest
 {
+  public string? Title { get; set; }
   public DateTime? StartDate { get; set; }
   public DateTime? EndDate { get; set; }
   public Guid? PersonId { get; set; }

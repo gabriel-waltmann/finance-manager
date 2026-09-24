@@ -7,6 +7,7 @@ public sealed class ListTransactionRequestNormalizer : RequestNormalizer<ListTra
   public override void Normalize(ListTransactionRequest request)
   {
     request.Search = RequestTextNormalizer.NormalizeOptional(request.Search);
+    request.Title = RequestTextNormalizer.NormalizeOptional(request.Title);
     request.Order = RequestTextNormalizer.NormalizeIdentifier(request.Order);
   }
 }

@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import DateInput from '../../../components/inputs/DateInput.vue'
 import SelectInput from '../../../components/inputs/SelectInput.vue'
+import TextInput from '../../../components/inputs/TextInput.vue'
 import type { CategoryEntity } from '../../../entities/CategoryEntity'
 import type { PersonEntity } from '../../../entities/PersonEntity'
 
@@ -13,6 +14,7 @@ const props = defineProps<{
 
 const startDate = defineModel<string>('startDate', { required: true })
 const endDate = defineModel<string>('endDate', { required: true })
+const title = defineModel<string>('title', { required: true })
 const personFilter = defineModel<string>('personFilter', { required: true })
 const categoryFilter = defineModel<string>('categoryFilter', { required: true })
 
@@ -42,7 +44,15 @@ const categoryOptions = computed(() => [
       <p class="mt-1 text-sm text-stone-500">Use at least one filter to preview transactions.</p>
     </div>
 
-    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-4 xl:items-end">
+    <div class="grid gap-3 md:grid-cols-2 xl:grid-cols-5 xl:items-end">
+      <TextInput
+        v-model="title"
+        label="Title"
+        type="search"
+        placeholder="Transaction title"
+        :max-length="200"
+        :disabled="disabled"
+      />
       <DateInput v-model="startDate" label="Start date" :disabled="disabled" />
       <DateInput v-model="endDate" label="End date" :disabled="disabled" />
       <SelectInput

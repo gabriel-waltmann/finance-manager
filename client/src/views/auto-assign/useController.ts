@@ -36,8 +36,10 @@ const tableHeaders: DataTableHeader[] = [
 export function useController() {
   const toast = useToast()
   const confirmOpen = ref(false)
+  const debouncedTitle = ref('')
 
   const filters = reactive({
+    title: '',
     startDate: '',
     endDate: '',
     personFilter: '',
@@ -51,7 +53,13 @@ export function useController() {
     targetCategoryIds: [] as string[],
   })
 
+  let titleDebounce: ReturnType<typeof window.setTimeout> | undefined
+
+  const normalizedTitle = computed(() => filters.title.trim())
+  const titleFilterPending = computed(() => normalizedTitle.value !== debouncedTitle.value)
+
   const hasActiveFilter = computed(() => Boolean(
+    normalizedTitle.value ||
     filters.startDate ||
     filters.endDate ||
     filters.personFilter ||
@@ -60,19 +68,24 @@ export function useController() {
   const datesValid = computed(() => (
     !filters.startDate || !filters.endDate || filters.startDate <= filters.endDate
   ))
-  const previewEnabled = computed(() => hasActiveFilter.value && datesValid.value)
+  const previewEnabled = computed(() => (
+    hasActiveFilter.value && datesValid.value && !titleFilterPending.value
+  ))
   const filterError = computed(() => (
     hasActiveFilter.value && !datesValid.value
       ? 'Start date must be before or equal to end date.'
       : ''
   ))
   const previewEmptyLabel = computed(() => (
-    hasActiveFilter.value
+    titleFilterPending.value
+      ? 'Updating title filter...'
+      : hasActiveFilter.value
       ? 'No matching transactions found.'
       : 'Choose at least one filter to preview transactions.'
   ))
 
   const transactionParams = computed<TransactionQueryParams>(() => ({
+    title: debouncedTitle.value || undefined,
     startDate: filters.startDate || undefined,
     endDate: filters.endDate || undefined,
     personId: filters.personFilter && filters.personFilter !== 'unassigned'
@@ -221,6 +234,17 @@ export function useController() {
     if (action !== 'add' && action !== 'replace') assignment.targetCategoryIds = []
   })
 
+  watch(
+    () => filters.title,
+    () => {
+      clearTitleDebounce()
+      titleDebounce = window.setTimeout(() => {
+        debouncedTitle.value = normalizedTitle.value
+      }, 300)
+    },
+    { flush: 'sync' },
+  )
+
   onMounted(() => {
     loadMoreObserver = new IntersectionObserver(([entry]) => {
       loadMoreVisible.value = entry?.isIntersecting ?? false
@@ -230,7 +254,10 @@ export function useController() {
     if (loadMoreTarget.value) loadMoreObserver.observe(loadMoreTarget.value)
   })
 
-  onBeforeUnmount(() => loadMoreObserver?.disconnect())
+  onBeforeUnmount(() => {
+    clearTitleDebounce()
+    loadMoreObserver?.disconnect()
+  })
 
   function loadData() {
     const requests: Promise<unknown>[] = [
@@ -252,6 +279,13 @@ export function useController() {
     loadMoreTarget.value = target instanceof HTMLElement ? target : null
   }
 
+  function clearTitleDebounce() {
+    if (titleDebounce !== undefined) {
+      window.clearTimeout(titleDebounce)
+      titleDebounce = undefined
+    }
+  }
+
   function openConfirmation() {
     if (canApply.value) confirmOpen.value = true
   }
@@ -265,6 +299,7 @@ export function useController() {
 
     const payload: AutoAssignTransactionsPayload = {
       filter: {
+        title: debouncedTitle.value || undefined,
         startDate: filters.startDate || undefined,
         endDate: filters.endDate || undefined,
         personId: filters.personFilter && filters.personFilter !== 'unassigned'

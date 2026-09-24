@@ -74,6 +74,7 @@ public class TransactionService(DatabaseContext context)
 
     query = ApplyFilters(
       query,
+      request.Title,
       request.StartDate,
       request.EndDate,
       request.PersonId,
@@ -207,6 +208,7 @@ public class TransactionService(DatabaseContext context)
     var filter = request.Filter;
     var transactionIds = await ApplyFilters(
         _context.Transactions.Where(transaction => transaction.Deleted_at == null),
+        filter.Title,
         filter.StartDate,
         filter.EndDate,
         filter.PersonId,
@@ -355,6 +357,7 @@ public class TransactionService(DatabaseContext context)
 
   private IQueryable<TransactionModel> ApplyFilters(
     IQueryable<TransactionModel> query,
+    string? title,
     DateTime? startDateValue,
     DateTime? endDateValue,
     Guid? personId,
@@ -364,6 +367,14 @@ public class TransactionService(DatabaseContext context)
     bool withDeleted
   )
   {
+    if (!string.IsNullOrWhiteSpace(title))
+    {
+      var titlePattern = $"%{EscapeLikePattern(title)}%";
+      query = query.Where(transaction =>
+        EF.Functions.ILike(transaction.Title, titlePattern, "\\")
+      );
+    }
+
     if (startDateValue.HasValue)
     {
       var startDate = startDateValue.Value.Date;

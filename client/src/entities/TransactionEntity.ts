@@ -28,6 +28,7 @@ export interface ListTransactionResponse {
 
 export interface ListTransactionParams {
   search?: string
+  title?: string
   startDate?: string
   endDate?: string
   personId?: Id

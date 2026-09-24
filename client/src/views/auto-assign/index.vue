@@ -45,6 +45,7 @@ const {
     <ViewHeader title="Auto assign" />
 
     <AutoAssignFilter
+      v-model:title="filters.title"
       v-model:start-date="filters.startDate"
       v-model:end-date="filters.endDate"
       v-model:person-filter="filters.personFilter"
