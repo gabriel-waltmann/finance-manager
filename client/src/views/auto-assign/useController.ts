@@ -8,22 +8,22 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
-import type { DataTableHeader, DataTableRow } from '../../components/tables/types'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
+import type { DataTableHeader, DataTableRow } from '@/components/tables/types'
 import type {
   AutoAssignCategoryAction,
   AutoAssignPersonAction,
   AutoAssignTransactionsPayload,
-} from '../../entities/AutoAssignTransactionEntity'
-import { displayAmount, displayDate } from '../../lib/format'
-import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
-import { usePersonOptionsQuery } from '../../queries/PersonQueries'
+} from '@/entities/AutoAssignTransactionEntity'
+import { displayAmount, displayDate } from '@/lib/format'
+import { useCategoryOptionsQuery } from '@/queries/CategoryQueries'
+import { usePersonOptionsQuery } from '@/queries/PersonQueries'
 import {
   useAutoAssignTransactionsMutation,
   useTransactionsQuery,
   type TransactionQueryParams,
-} from '../../queries/TransactionQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/TransactionQueries'
+import { useToast } from '@/stores/toast'
 
 const tableHeaders: DataTableHeader[] = [
   { key: 'date', label: 'Date', class: 'whitespace-nowrap' },

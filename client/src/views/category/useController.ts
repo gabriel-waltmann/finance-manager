@@ -8,16 +8,16 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
-import type { DataTableHeader, DataTableRow } from '../../components/tables/types'
-import type { CategoryEntity, CategoryPayload } from '../../entities/CategoryEntity'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
+import type { DataTableHeader, DataTableRow } from '@/components/tables/types'
+import type { CategoryEntity, CategoryPayload } from '@/entities/CategoryEntity'
 import {
   useCategoriesQuery,
   useDeleteCategoryMutation,
   useSaveCategoryMutation,
   type CategoryQueryParams,
-} from '../../queries/CategoryQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/CategoryQueries'
+import { useToast } from '@/stores/toast'
 import CategoryActionsCell from './components/CategoryActionsCell.vue'
 
 const tableHeaders: DataTableHeader[] = [

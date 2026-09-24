@@ -1,6 +1,6 @@
 import api from ".."
 import axios from 'axios'
-import { ErrorEntity } from "../../entities/ErrorEntity"
+import { ErrorEntity } from "@/entities/ErrorEntity"
 
 function readFirstValidationError(errors: unknown): string | undefined {
   if (!isRecord(errors)) {

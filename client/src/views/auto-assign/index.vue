@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import ErrorAlert from '../../components/alerts/ErrorAlert.vue'
-import ConfirmDialog from '../../components/dialogs/ConfirmDialog.vue'
-import ViewHeader from '../../components/headers/ViewHeader.vue'
-import DataTable from '../../components/tables/DataTable.vue'
+import ErrorAlert from '@/components/alerts/ErrorAlert.vue'
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
+import ViewHeader from '@/components/headers/ViewHeader.vue'
+import DataTable from '@/components/tables/DataTable.vue'
 import AutoAssignFilter from './components/AutoAssignFilter.vue'
 import AutoAssignForm from './components/AutoAssignForm.vue'
 import { useController } from './useController'

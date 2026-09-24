@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import FilledButton from '../../../components/buttons/FilledButton.vue'
-import ModalDialog from '../../../components/dialogs/ModalDialog.vue'
-import CurrencyInput from '../../../components/inputs/CurrencyInput.vue'
-import DateInput from '../../../components/inputs/DateInput.vue'
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import TextInput from '../../../components/inputs/TextInput.vue'
-import MultiSelectInput from '../../../components/inputs/MultiSelectInput.vue'
-import type { PersonEntity } from '../../../entities/PersonEntity'
-import type { CategoryEntity } from '../../../entities/CategoryEntity'
+import FilledButton from '@/components/buttons/FilledButton.vue'
+import ModalDialog from '@/components/dialogs/ModalDialog.vue'
+import CurrencyInput from '@/components/inputs/CurrencyInput.vue'
+import DateInput from '@/components/inputs/DateInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import TextInput from '@/components/inputs/TextInput.vue'
+import MultiSelectInput from '@/components/inputs/MultiSelectInput.vue'
+import type { PersonEntity } from '@/entities/PersonEntity'
+import type { CategoryEntity } from '@/entities/CategoryEntity'
 
 const props = defineProps<{
   editing: boolean

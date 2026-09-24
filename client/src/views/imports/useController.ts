@@ -8,27 +8,27 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
 import type {
   DataTableHeader,
   DataTableRow,
-} from '../../components/tables/types'
+} from '@/components/tables/types'
 import type {
   FileCategory,
   FileProcessingStatus,
   TransactionImportEntity,
-} from '../../entities/TransactionImportEntity'
-import { displayDateTime } from '../../lib/format'
-import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
-import { usePersonOptionsQuery } from '../../queries/PersonQueries'
+} from '@/entities/TransactionImportEntity'
+import { displayDateTime } from '@/lib/format'
+import { useCategoryOptionsQuery } from '@/queries/CategoryQueries'
+import { usePersonOptionsQuery } from '@/queries/PersonQueries'
 import {
   openTransactionImportEventStream,
   useTransactionImportCache,
   useTransactionImportsQuery,
   useUploadTransactionMutation,
   type TransactionImportQueryParams,
-} from '../../queries/TransactionImportQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/TransactionImportQueries'
+import { useToast } from '@/stores/toast'
 import ImportStatusCell from './components/ImportStatusCell.vue'
 
 const tableHeaders: DataTableHeader[] = [

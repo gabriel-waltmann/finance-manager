@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { FileProcessingStatus } from '../../../entities/TransactionImportEntity'
+import type { FileProcessingStatus } from '@/entities/TransactionImportEntity'
 
 defineProps<{
   status: FileProcessingStatus

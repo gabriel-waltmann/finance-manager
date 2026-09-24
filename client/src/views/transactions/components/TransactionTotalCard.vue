@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { displayBRLCurrency } from '../../../lib/format'
+import { displayBRLCurrency } from '@/lib/format'
 
 defineProps<{
   amount: number

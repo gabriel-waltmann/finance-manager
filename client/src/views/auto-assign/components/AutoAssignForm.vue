@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import FilledButton from '../../../components/buttons/FilledButton.vue'
-import MultiSelectInput from '../../../components/inputs/MultiSelectInput.vue'
-import SelectInput from '../../../components/inputs/SelectInput.vue'
+import FilledButton from '@/components/buttons/FilledButton.vue'
+import MultiSelectInput from '@/components/inputs/MultiSelectInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
 import type {
   AutoAssignCategoryAction,
   AutoAssignPersonAction,
-} from '../../../entities/AutoAssignTransactionEntity'
-import type { CategoryEntity } from '../../../entities/CategoryEntity'
-import type { PersonEntity } from '../../../entities/PersonEntity'
+} from '@/entities/AutoAssignTransactionEntity'
+import type { CategoryEntity } from '@/entities/CategoryEntity'
+import type { PersonEntity } from '@/entities/PersonEntity'
 
 const props = defineProps<{
   applying: boolean

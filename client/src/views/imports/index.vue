@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import ViewHeader from '../../components/headers/ViewHeader.vue'
-import DataTable from '../../components/tables/DataTable.vue'
+import ViewHeader from '@/components/headers/ViewHeader.vue'
+import DataTable from '@/components/tables/DataTable.vue'
 import ImportActions from './components/ImportActions.vue'
 import ImportFilter from './components/ImportFilter.vue'
 import ImportUploadDialog from './components/ImportUploadDialog.vue'

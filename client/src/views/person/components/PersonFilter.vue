@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import TextInput from '../../../components/inputs/TextInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import TextInput from '@/components/inputs/TextInput.vue'
 
 const search = defineModel<string>('search', { required: true })
 const order = defineModel<'asc' | 'desc'>('order', { required: true })

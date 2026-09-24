@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import ErrorAlert from '../../components/alerts/ErrorAlert.vue'
-import ViewHeader from '../../components/headers/ViewHeader.vue'
-import DataTable from '../../components/tables/DataTable.vue'
+import ErrorAlert from '@/components/alerts/ErrorAlert.vue'
+import ViewHeader from '@/components/headers/ViewHeader.vue'
+import DataTable from '@/components/tables/DataTable.vue'
 import DashboardFilter from './components/Filter.vue'
 import { useController } from './useController'
 

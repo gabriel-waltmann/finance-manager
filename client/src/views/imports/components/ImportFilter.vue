@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import TextInput from '../../../components/inputs/TextInput.vue'
-import type { FileProcessingStatus } from '../../../entities/TransactionImportEntity'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import TextInput from '@/components/inputs/TextInput.vue'
+import type { FileProcessingStatus } from '@/entities/TransactionImportEntity'
 
 const search = defineModel<string>('search', { required: true })
 const status = defineModel<'' | FileProcessingStatus>('status', { required: true })

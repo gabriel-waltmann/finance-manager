@@ -8,19 +8,19 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
 import type {
   DataTableHeader,
   DataTableRow,
-} from '../../components/tables/types'
-import { displayAmount } from '../../lib/format'
+} from '@/components/tables/types'
+import { displayAmount } from '@/lib/format'
 import {
   useDashboardQuery,
   type DashboardQueryParams,
-} from '../../queries/DashboardQueries'
-import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
-import { usePersonOptionsQuery } from '../../queries/PersonQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/DashboardQueries'
+import { useCategoryOptionsQuery } from '@/queries/CategoryQueries'
+import { usePersonOptionsQuery } from '@/queries/PersonQueries'
+import { useToast } from '@/stores/toast'
 
 const tableHeaders: DataTableHeader[] = [
   { key: 'title', label: 'Title', class: 'min-w-64' },

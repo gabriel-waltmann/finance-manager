@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import DateInput from '../../../components/inputs/DateInput.vue'
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import TextInput from '../../../components/inputs/TextInput.vue'
-import type { CategoryEntity } from '../../../entities/CategoryEntity'
-import type { PersonEntity } from '../../../entities/PersonEntity'
+import DateInput from '@/components/inputs/DateInput.vue'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import TextInput from '@/components/inputs/TextInput.vue'
+import type { CategoryEntity } from '@/entities/CategoryEntity'
+import type { PersonEntity } from '@/entities/PersonEntity'
 
 const props = defineProps<{
   categories: CategoryEntity[]

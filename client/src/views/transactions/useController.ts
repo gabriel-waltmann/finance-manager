@@ -8,14 +8,14 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
 import type {
   DataTableHeader,
   DataTableRow,
-} from '../../components/tables/types'
-import { displayAmount, displayDate, inputDate, todayInputDate } from '../../lib/format'
-import { usePersonOptionsQuery } from '../../queries/PersonQueries'
-import { useCategoryOptionsQuery } from '../../queries/CategoryQueries'
+} from '@/components/tables/types'
+import { displayAmount, displayDate, inputDate, todayInputDate } from '@/lib/format'
+import { usePersonOptionsQuery } from '@/queries/PersonQueries'
+import { useCategoryOptionsQuery } from '@/queries/CategoryQueries'
 import {
   useAssignmentMutation,
   useCategoryAssignmentMutation,
@@ -25,12 +25,12 @@ import {
   useSaveTransactionMutation,
   useTransactionsQuery,
   type TransactionQueryParams,
-} from '../../queries/TransactionQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/TransactionQueries'
+import { useToast } from '@/stores/toast'
 import type {
   TransactionPayload,
   TransactionWithAssignments,
-} from '../../entities/TransactionEntity'
+} from '@/entities/TransactionEntity'
 import TransactionActionsCell from './components/TransactionActionsCell.vue'
 import TransactionPersonCell from './components/TransactionPersonCell.vue'
 import TransactionCategoryCell from './components/TransactionCategoryCell.vue'

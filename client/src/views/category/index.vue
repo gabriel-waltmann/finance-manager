@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import FilledButton from '../../components/buttons/FilledButton.vue'
-import ConfirmDialog from '../../components/dialogs/ConfirmDialog.vue'
-import ViewHeader from '../../components/headers/ViewHeader.vue'
-import DataTable from '../../components/tables/DataTable.vue'
+import FilledButton from '@/components/buttons/FilledButton.vue'
+import ConfirmDialog from '@/components/dialogs/ConfirmDialog.vue'
+import ViewHeader from '@/components/headers/ViewHeader.vue'
+import DataTable from '@/components/tables/DataTable.vue'
 import CategoryFilter from './components/CategoryFilter.vue'
 import CategoryFormDialog from './components/CategoryFormDialog.vue'
 import { useController } from './useController'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import SelectInput from '../../../components/inputs/SelectInput.vue'
-import type { PersonEntity } from '../../../entities/PersonEntity'
+import SelectInput from '@/components/inputs/SelectInput.vue'
+import type { PersonEntity } from '@/entities/PersonEntity'
 
 const props = defineProps<{
   disabled: boolean

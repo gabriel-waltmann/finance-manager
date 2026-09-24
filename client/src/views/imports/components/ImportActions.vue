@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import FilledButton from '../../../components/buttons/FilledButton.vue'
+import FilledButton from '@/components/buttons/FilledButton.vue'
 
 const props = defineProps<{
   connectionState: 'connecting' | 'live' | 'reconnecting'

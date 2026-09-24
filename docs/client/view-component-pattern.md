@@ -39,7 +39,7 @@ Do not place query setup, derived state, watchers, lifecycle behavior, or workfl
 
 ```vue
 <script setup lang="ts">
-import ViewHeader from '../../components/headers/ViewHeader.vue'
+import ViewHeader from '@/components/headers/ViewHeader.vue'
 import AccountFilter from './components/AccountFilter.vue'
 import { useController } from './useController'
 
@@ -71,7 +71,7 @@ Return only the state and actions required by `index.vue` or its child component
 
 ```ts
 import { computed, reactive } from 'vue'
-import { useAccountsQuery } from '../../queries/AccountQueries'
+import { useAccountsQuery } from '@/queries/AccountQueries'
 
 export function useController() {
   const filters = reactive({ search: '' })

@@ -8,19 +8,19 @@ import {
   ref,
   watch,
 } from 'vue'
-import DataTableTextCell from '../../components/tables/DataTableTextCell.vue'
+import DataTableTextCell from '@/components/tables/DataTableTextCell.vue'
 import type {
   DataTableHeader,
   DataTableRow,
-} from '../../components/tables/types'
-import type { PersonEntity, PersonPayload } from '../../entities/PersonEntity'
+} from '@/components/tables/types'
+import type { PersonEntity, PersonPayload } from '@/entities/PersonEntity'
 import {
   useDeletePersonMutation,
   usePersonsQuery,
   useSavePersonMutation,
   type PersonQueryParams,
-} from '../../queries/PersonQueries'
-import { useToast } from '../../stores/toast'
+} from '@/queries/PersonQueries'
+import { useToast } from '@/stores/toast'
 import PersonActionsCell from './components/PersonActionsCell.vue'
 
 const tableHeaders: DataTableHeader[] = [

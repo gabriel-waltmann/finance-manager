@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import MultiSelectInput from '../../../components/inputs/MultiSelectInput.vue'
-import type { CategoryEntity } from '../../../entities/CategoryEntity'
+import MultiSelectInput from '@/components/inputs/MultiSelectInput.vue'
+import type { CategoryEntity } from '@/entities/CategoryEntity'
 
 const props = defineProps<{
   categories: CategoryEntity[]

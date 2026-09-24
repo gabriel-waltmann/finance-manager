@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import FilledButton from '../../../components/buttons/FilledButton.vue'
-import ModalDialog from '../../../components/dialogs/ModalDialog.vue'
-import TextInput from '../../../components/inputs/TextInput.vue'
+import FilledButton from '@/components/buttons/FilledButton.vue'
+import ModalDialog from '@/components/dialogs/ModalDialog.vue'
+import TextInput from '@/components/inputs/TextInput.vue'
 
 defineProps<{
   editing: boolean
