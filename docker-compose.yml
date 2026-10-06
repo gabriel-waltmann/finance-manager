@@ -11,6 +11,11 @@ services:
       - "5432:5432"
     volumes:
       - db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finance-manager-user -d finance-manager-db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:8.8-alpine
@@ -20,6 +25,11 @@ services:
     volumes:
       - redis:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:4-management
@@ -34,9 +44,55 @@ services:
       - rabbitmq_data:/var/lib/rabbitmq
       - rabbitmq_log:/var/log/rabbitmq
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.dev
+    container_name: finance-manager-api
+    env_file:
+      - ./api/.env.docker
+    ports:
+      - "5266:5266"
+    volumes:
+      - ./api:/app
+      - api_bin:/app/bin
+      - api_obj:/app/obj
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    container_name: finance-manager-frontend
+    environment:
+      VITE_API_TARGET: http://api:5266
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./client:/app
+      - client_node_modules:/app/node_modules
+    depends_on:
+      - api
+    restart: unless-stopped
 
 volumes:
   db:
   redis:
   rabbitmq_data:
   rabbitmq_log:
+  api_bin:
+  api_obj:
+  client_node_modules:

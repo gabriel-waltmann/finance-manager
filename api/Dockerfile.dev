@@ -1,0 +1,12 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0
+
+WORKDIR /app
+
+COPY api.csproj ./
+RUN dotnet restore
+
+COPY . ./
+
+EXPOSE 5266
+
+CMD ["dotnet", "watch", "run", "--no-launch-profile"]

@@ -4,14 +4,25 @@
 
 See the [documentation index](./docs/README.md) for the API implementation, people and transactions, asynchronous file processing, and live import status updates.
 
-### Run the development server
-Define yours secrets. See [define-secrets.md](./docs/secrets/define-secrets.md)
+### Run the development environment
+
+Start PostgreSQL, Redis, RabbitMQ, the API, and the Vite development server:
+
 ```bash
-  docker compose up -d
-  cd api
-  dotnet run 
+docker compose up --build
 ```
-Open [Swagger](https://localhost:7026/swagger) with your browser to see the result.
+
+The development services are available at:
+
+- Frontend: [http://localhost:5173](http://localhost:5173)
+- API/Swagger: [http://localhost:5266/swagger](http://localhost:5266/swagger)
+- RabbitMQ management: [http://localhost:15672](http://localhost:15672)
+
+The API and frontend source directories are mounted into their containers. `dotnet watch` restarts the API when C# files change, and Vite applies frontend changes through HMR.
+
+The API container configuration is stored in `api/.env.docker`. These values are intended for local development only.
+
+Use `docker compose down` to stop the environment. Add `-v` only when you also want to remove the database, queue, and development dependency volumes.
 
 ### Functional Requirements
 - [X] GET /transactions should return a list of Transaction
