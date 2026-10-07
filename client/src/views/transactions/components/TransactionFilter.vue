@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import DateInput from '@/components/inputs/DateInput.vue'
+import MultiSelectInput from '@/components/inputs/MultiSelectInput.vue'
 import SelectInput from '@/components/inputs/SelectInput.vue'
 import TextInput from '@/components/inputs/TextInput.vue'
 import type { PersonEntity } from '@/entities/PersonEntity'
@@ -15,7 +16,7 @@ const search = defineModel<string>('search', { required: true })
 const startDate = defineModel<string>('startDate', { required: true })
 const endDate = defineModel<string>('endDate', { required: true })
 const personFilter = defineModel<string>('personFilter', { required: true })
-const categoryFilter = defineModel<string>('categoryFilter', { required: true })
+const categoryFilter = defineModel<string[]>('categoryFilter', { required: true })
 const order = defineModel<'asc' | 'desc'>('order', { required: true })
 
 const personOptions = computed(() => [
@@ -28,8 +29,7 @@ const personOptions = computed(() => [
 ])
 
 const categoryOptions = computed(() => [
-  { label: 'Any category', value: '' },
-  { label: 'Uncategorized', value: 'uncategorized' },
+  { label: 'Uncategorized', value: 'uncategorized', exclusive: true },
   ...props.categories.map((category) => ({
     label: category.title,
     value: category.id,
@@ -53,7 +53,13 @@ const orderOptions = [
       
       <SelectInput v-model="personFilter" label="Person" :options="personOptions" />
 
-      <SelectInput v-model="categoryFilter" label="Category" :options="categoryOptions" />
+      <MultiSelectInput
+        v-model="categoryFilter"
+        confirm
+        label="Category"
+        :options="categoryOptions"
+        placeholder="Any category"
+      />
       
       <SelectInput v-model="order" label="Order" :options="orderOptions" />
     </div>

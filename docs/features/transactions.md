@@ -53,14 +53,14 @@ The date must not be the default .NET value, the title must be nonblank and at m
 | `endDate` | Inclusive calendar-day upper boundary, implemented as less than the next day. |
 | `personId` | Only transactions actively assigned to this person. |
 | `unassigned` | Only transactions without an active assignment. It cannot be combined with `personId`. |
-| `categoryId` | Only transactions containing this visible category. |
-| `uncategorized` | Only transactions without visible active categories. It cannot be combined with `categoryId`. |
+| `categoryIds` | Repeated parameter that includes transactions containing every selected visible category. |
+| `uncategorized` | Includes transactions without visible active categories. It cannot be combined with `categoryIds`. |
 | `page` | One-based page number; default `1`. |
 | `limit` | Page size from 1 to 100; default `20`. |
 | `order` | `asc` or `desc` by transaction date, then creation time; default `desc`. |
 | `withDeleted` | Includes soft-deleted transactions and related records when `true`. |
 
-The service counts the filtered query before applying `Skip` and `Take`, so the response contains `page`, `limit`, `total`, and `totalPages` alongside `transactions`.
+Send multiple categories as repeated keys, for example `categoryIds={id1}&categoryIds={id2}`. A transaction must contain every requested category, but it may contain additional categories. An empty or omitted category selection applies no category filter. The service counts the filtered query before applying `Skip` and `Take`, so the response contains `page`, `limit`, `total`, and `totalPages` alongside `transactions`.
 
 Search matches transaction titles, assigned person names, and visible category titles. Each list item and the single-transaction endpoint return this structure:
 

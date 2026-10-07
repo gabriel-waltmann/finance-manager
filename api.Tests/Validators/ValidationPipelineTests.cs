@@ -47,6 +47,25 @@ public class ValidationPipelineTests
   }
 
   [Fact]
+  public async Task Repeated_category_ids_are_bound_from_the_query_string()
+  {
+    await using var app = await CreateApp();
+    TestValidationController.LastQuery = null;
+    var firstCategoryId = Guid.NewGuid();
+    var secondCategoryId = Guid.NewGuid();
+
+    using var response = await app.GetTestClient().GetAsync(
+      $"/_test/validation/query?categoryIds={firstCategoryId}&categoryIds={secondCategoryId}"
+    );
+
+    Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+    Assert.Equal(
+      [firstCategoryId, secondCategoryId],
+      TestValidationController.LastQuery?.CategoryIds
+    );
+  }
+
+  [Fact]
   public async Task Control_characters_return_problem_details_before_action_execution()
   {
     await using var app = await CreateApp();

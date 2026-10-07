@@ -33,7 +33,7 @@ export interface ListTransactionParams {
   endDate?: string
   personId?: Id
   unassigned?: boolean
-  categoryId?: Id
+  categoryIds?: Id[]
   uncategorized?: boolean
   page?: number
   limit?: number

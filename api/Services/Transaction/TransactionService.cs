@@ -79,7 +79,7 @@ public class TransactionService(DatabaseContext context)
       request.EndDate,
       request.PersonId,
       request.Unassigned,
-      request.CategoryId,
+      request.CategoryIds,
       request.Uncategorized,
       withDeleted
     );
@@ -213,7 +213,7 @@ public class TransactionService(DatabaseContext context)
         filter.EndDate,
         filter.PersonId,
         filter.Unassigned,
-        filter.CategoryId,
+        filter.CategoryId.HasValue ? [filter.CategoryId.Value] : [],
         filter.Uncategorized,
         false
       )
@@ -362,7 +362,7 @@ public class TransactionService(DatabaseContext context)
     DateTime? endDateValue,
     Guid? personId,
     bool unassigned,
-    Guid? categoryId,
+    IReadOnlyCollection<Guid> categoryIds,
     bool uncategorized,
     bool withDeleted
   )
@@ -411,18 +411,24 @@ public class TransactionService(DatabaseContext context)
       );
     }
 
-    if (categoryId.HasValue)
+    var requestedCategoryIds = categoryIds.ToList();
+    var hasCategoryIds = requestedCategoryIds.Count > 0;
+    if (hasCategoryIds)
     {
       query = query.Where(transaction =>
-        _context.TransactionsCategory.Any(transactionCategory =>
-          transactionCategory.TransactionId == transaction.Id &&
-          transactionCategory.Deleted_at == null &&
-          transactionCategory.CategoryId == categoryId.Value &&
-          (withDeleted || _context.Categories.Any(category =>
-            category.Id == transactionCategory.CategoryId &&
-            category.Deleted_at == null
-          ))
-        )
+        _context.TransactionsCategory
+          .Where(transactionCategory =>
+            transactionCategory.TransactionId == transaction.Id &&
+            transactionCategory.Deleted_at == null &&
+            requestedCategoryIds.Contains(transactionCategory.CategoryId) &&
+            (withDeleted || _context.Categories.Any(category =>
+              category.Id == transactionCategory.CategoryId &&
+              category.Deleted_at == null
+            ))
+          )
+          .Select(transactionCategory => transactionCategory.CategoryId)
+          .Distinct()
+          .Count() == requestedCategoryIds.Count
       );
     }
     else if (uncategorized)

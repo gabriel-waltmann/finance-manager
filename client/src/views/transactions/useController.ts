@@ -57,7 +57,7 @@ export function useController() {
     startDate: '',
     endDate: '',
     personFilter: '',
-    categoryFilter: '',
+    categoryFilter: [] as string[],
     order: 'desc' as 'asc' | 'desc',
   })
 
@@ -71,20 +71,22 @@ export function useController() {
 
   let searchDebounce: ReturnType<typeof window.setTimeout> | undefined
 
-  const transactionParams = computed<TransactionQueryParams>(() => ({
-    search: debouncedSearch.value || undefined,
-    startDate: filters.startDate || undefined,
-    endDate: filters.endDate || undefined,
-    personId: filters.personFilter && filters.personFilter !== 'unassigned'
-      ? filters.personFilter
-      : undefined,
-    unassigned: filters.personFilter === 'unassigned' ? true : undefined,
-    categoryId: filters.categoryFilter && filters.categoryFilter !== 'uncategorized'
-      ? filters.categoryFilter
-      : undefined,
-    uncategorized: filters.categoryFilter === 'uncategorized' ? true : undefined,
-    order: filters.order,
-  }))
+  const transactionParams = computed<TransactionQueryParams>(() => {
+    const categoryIds = filters.categoryFilter.filter((value) => value !== 'uncategorized')
+
+    return {
+      search: debouncedSearch.value || undefined,
+      startDate: filters.startDate || undefined,
+      endDate: filters.endDate || undefined,
+      personId: filters.personFilter && filters.personFilter !== 'unassigned'
+        ? filters.personFilter
+        : undefined,
+      unassigned: filters.personFilter === 'unassigned' ? true : undefined,
+      categoryIds: categoryIds.length > 0 ? categoryIds : undefined,
+      uncategorized: filters.categoryFilter.includes('uncategorized') ? true : undefined,
+      order: filters.order,
+    }
+  })
 
   const { query: transactionQuery, queryKey: transactionQueryKey } = useTransactionsQuery(
     transactionParams,

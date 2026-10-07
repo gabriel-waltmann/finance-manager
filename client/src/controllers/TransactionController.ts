@@ -38,7 +38,11 @@ export class TransactionController {
     params: ListTransactionParams = {},
     signal?: AbortSignal,
   ): Promise<ListTransactionResponse> {
-    return apiRequest<ListTransactionResponse>('/transactions', { params, signal })
+    return apiRequest<ListTransactionResponse>('/transactions', {
+      params,
+      paramsSerializer: { indexes: null },
+      signal,
+    })
   }
 
   static autoAssign(

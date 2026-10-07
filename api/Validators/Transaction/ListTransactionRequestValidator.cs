@@ -39,15 +39,20 @@ public class ListTransactionRequestValidator : AbstractValidator<ListTransaction
       .WithName(nameof(ListTransactionRequest.PersonId))
       .WithMessage("PersonId and unassigned cannot be used together.");
 
-    RuleFor(request => request.CategoryId)
+    RuleFor(request => request.CategoryIds)
+      .Cascade(CascadeMode.Stop)
+      .NotNull()
+      .Must(categoryIds => categoryIds.Count == categoryIds.Distinct().Count())
+      .WithMessage("CategoryIds must not contain duplicates.");
+
+    RuleForEach(request => request.CategoryIds)
       .NotEqual(Guid.Empty)
-      .When(request => request.CategoryId.HasValue)
-      .WithMessage("CategoryId must be a non-empty GUID.");
+      .WithMessage("CategoryIds must contain only non-empty GUIDs.");
 
     RuleFor(request => request)
-      .Must(request => !request.CategoryId.HasValue || !request.Uncategorized)
-      .WithName(nameof(ListTransactionRequest.CategoryId))
-      .WithMessage("CategoryId and uncategorized cannot be used together.");
+      .Must(request => request.CategoryIds.Count == 0 || !request.Uncategorized)
+      .WithName(nameof(ListTransactionRequest.CategoryIds))
+      .WithMessage("CategoryIds and uncategorized cannot be used together.");
 
     RuleFor(request => request)
       .Must(request => !request.StartDate.HasValue ||

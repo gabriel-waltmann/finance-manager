@@ -92,8 +92,8 @@ export function useController() {
       ? filters.personFilter
       : undefined,
     unassigned: filters.personFilter === 'unassigned' ? true : undefined,
-    categoryId: filters.categoryFilter && filters.categoryFilter !== 'uncategorized'
-      ? filters.categoryFilter
+    categoryIds: filters.categoryFilter && filters.categoryFilter !== 'uncategorized'
+      ? [filters.categoryFilter]
       : undefined,
     uncategorized: filters.categoryFilter === 'uncategorized' ? true : undefined,
     order: 'desc',

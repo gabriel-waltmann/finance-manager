@@ -3,6 +3,7 @@ import { PhCaretDown, PhX } from '@phosphor-icons/vue'
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useId, watch } from 'vue'
 
 interface MultiSelectOption {
+  exclusive?: boolean
   label: string
   value: string
 }
@@ -125,9 +126,18 @@ function handleOptionKeydown(event: KeyboardEvent, index: number, value: string)
 
 function toggleValue(value: string) {
   const values = activeValues.value
-  const nextValues = values.includes(value)
-    ? values.filter((item) => item !== value)
-    : [...values, value]
+  let nextValues: string[]
+
+  if (values.includes(value)) {
+    nextValues = values.filter((item) => item !== value)
+  } else if (props.options.find((option) => option.value === value)?.exclusive) {
+    nextValues = [value]
+  } else {
+    const exclusiveValues = props.options
+      .filter((option) => option.exclusive)
+      .map((option) => option.value)
+    nextValues = [...values.filter((item) => !exclusiveValues.includes(item)), value]
+  }
 
   if (props.confirm) {
     draftValues.value = nextValues
